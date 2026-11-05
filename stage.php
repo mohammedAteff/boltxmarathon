@@ -5,7 +5,7 @@ $csrf=$operator?token():''; session_write_close();
 $wheel=$view==='wheel';
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BOLTX <?= $wheel?'Spin Wheel':'Mystery Boxes' ?></title><link rel="icon" type="image/png" href="assets/boltx-icon.png"><link rel="stylesheet" href="assets/style.css">
+<title>BOLTX <?= $wheel?'Spin Wheel':'Mystery Boxes' ?></title><link rel="icon" type="image/svg+xml" href="assets/boltx-icon.svg"><link rel="stylesheet" href="assets/style.css">
 <script type="module" src="assets/stage.js"></script></head>
 <body class="stage <?=$view?>" data-view="<?=$view?>" data-csrf="<?=h($csrf)?>">
 <div class="arena-decor" aria-hidden="true">
@@ -26,14 +26,19 @@ $wheel=$view==='wheel';
 <div class="wheel-frame"><div id="rotor"><svg id="segments" viewBox="0 0 500 500" role="img" aria-label="Available wheel items"></svg></div>
 <div class="hub"><img src="assets/bolt.svg" alt=""></div>
 <svg class="pointer" viewBox="0 0 65 65" aria-hidden="true"><path d="M9 4h47q8 0 4 9L33 61 5 13Q1 4 9 4Z"/><path class="point-bolt" d="M33 11h10l-9 12h7L24 42l5-16h-6Z"/></svg>
+<svg class="landing-strike" viewBox="0 0 500 500" aria-hidden="true">
+<path class="strike-branch" d="M284 52l26 7-19 24 32 3m-72 18-28 7 7 20-25 11"/>
+<path class="strike-core" d="M324-26 289 18l13 16-45 43 17 8-24 38"/>
+<circle class="strike-ring" cx="250" cy="123" r="24"/>
+</svg>
 </div>
 <div class="spin-wrap">
 <button id="undo" class="undo" type="button" <?=$operator?'':'hidden'?>>↶ &nbsp; UNDO LAST SPIN</button>
 <button id="spin" class="spin" type="button" disabled aria-label="Spin wheel">
-<svg viewBox="58 49 224 256" aria-hidden="true">
+<svg viewBox="-172 151 302 180" aria-hidden="true">
 <defs><linearGradient id="spinfill" x2=".75" y2="1"><stop stop-color="#ad44ff"/><stop offset=".53" stop-color="#6400d4"/><stop offset="1" stop-color="#381074"/></linearGradient></defs>
-<path d="M214 57 266 80Q280 86 272 97L194 153 239 174Q257 182 250 199Q248 204 242 209L87 297 150 206 65 168Z"/>
-<text x="163" y="179" text-anchor="middle">SPIN</text>
+<path transform="rotate(48)" d="M214 57 266 80Q280 86 272 97L194 153 239 174Q257 182 250 199Q248 204 242 209L87 297 150 206 65 168Z"/>
+<text x="-13" y="244" text-anchor="middle">SPIN</text>
 </svg>
 </button></div>
 </div>

@@ -36,10 +36,6 @@ function sound(box){
     tone.connect(gain).connect(audio.destination); tone.start(t); tone.stop(t+.48);
 }
 const palette=[['#f81aff','#6e059d'],['#a122ce','#31094b'],['#ab00ff','#3b087d'],['#f620ef','#650487'],['#8326b6','#2d063f'],['#b319f4','#480768'],['#8e2dc2','#300448']];
-const drinkColors={'🍊':'#ff9e05','🍓':'#fd2468','⚡':'#1c81ff','🥭':'#ffad03','🥤':'#6a200c','🍋':'#89db25','🧋':'#d36a0c'};
-function drink(symbol){
-    return '<path d="M9 -24 4 -48 16 -53" fill="none" stroke="#e5afff" stroke-width="2"/><path d="M-18 -33H18L12 12Q0 16-12 12Z" fill="'+drinkColors[symbol]+'" stroke="#ffdcff" stroke-width="2"/><path d="M-15 -30 -10 8M14 -29 9 8" fill="none" stroke="#fff" opacity=".5" stroke-width="2"/><ellipse cy="-32" rx="18" ry="4" fill="#fff" opacity=".52"/><path d="m-8 -22 7 -3 3 7-7 3zm8 10 7-3 3 7-7 3z" fill="#fff" opacity=".45"/>';
-}
 const point=(r,a)=>[250+Math.sin(a)*r,250-Math.cos(a)*r];
 function draw(pool){
     rotor.style.transform='rotate(0deg)';
@@ -50,13 +46,13 @@ function draw(pool){
         const [light,dark]=palette[i%palette.length], [gx,gy]=point(260,center);
         defs+='<linearGradient id="slice-'+i+'" gradientUnits="userSpaceOnUse" x1="250" y1="250" x2="'+gx+'" y2="'+gy+'"><stop stop-color="'+light+'"/><stop offset=".82" stop-color="'+dark+'"/><stop offset="1" stop-color="'+dark+'"/></linearGradient>';
         const fill='url(#slice-'+i+')';
-        segments+=n===1?'<circle cx="250" cy="250" r="249" fill="'+fill+'"/>':'<path d="M250 250 '+x1+' '+y1+' A249 249 0 '+(angle>Math.PI?1:0)+' 1 '+x2+' '+y2+' Z" fill="'+fill+'" stroke="#f478ff" stroke-width="1.25"/>';
+        segments+=n===1?'<circle data-slice="'+i+'" cx="250" cy="250" r="249" fill="'+fill+'"/>':'<path data-slice="'+i+'" d="M250 250 '+x1+' '+y1+' A249 249 0 '+(angle>Math.PI?1:0)+' 1 '+x2+' '+y2+' Z" fill="'+fill+'" stroke="#f478ff" stroke-width="1.25"/>';
         const label=Array.from(item.name), max=n>20?10:n>12?13:23, show=label.length>max?label.slice(0,max-1).join('')+'…':item.name;
         const width=Math.max(29,Math.min(n>16?57:n>10?86:132,show.length*(n>16?4.9:8.2)+17));
         const size=n>24?9:n>16?11:n>10?14:18;
         const rot=n>11?i*360/n+(i*360/n>90&&i*360/n<270?180:0):0;
         labels+='<g transform="translate('+x+' '+(n===1?135:y)+') rotate('+rot+')"><title>'+esc(item.name)+' ×'+item.qty+'</title>'+
-            (item.icon&&n<=13?(drinkColors[item.icon]?'<g transform="translate(0 -10) scale('+ (n>9?.62:1)+')">'+drink(item.icon)+'</g>':'<text y="-7" text-anchor="middle" font-size="33">'+esc(item.icon)+'</text>'):'')+
+            (item.icon&&n<=13?'<text y="-7" text-anchor="middle" font-size="33">'+esc(item.icon)+'</text>':'')+
             '<rect x="'+(-width/2)+'" y="'+(n>13?-9:10)+'" width="'+width+'" height="'+(n>13?17:27)+'" rx="12" fill="#170022" fill-opacity=".78"/><text text-anchor="middle" direction="inherit" unicode-bidi="plaintext" fill="#fff" font-family="Segoe UI,Tahoma,Arial,sans-serif" font-weight="800" font-size="'+size+'" y="'+(n>13?4:29)+'">'+esc(show)+'</text></g>';
     });
     svg.innerHTML='<defs>'+defs+'</defs>'+segments+labels+(!n?'<circle cx="250" cy="250" r="249" fill="#280b3b"/><text x="250" y="135" text-anchor="middle" fill="#f7c2ff" font-size="23">WHEEL EMPTY</text>':'');
@@ -96,8 +92,17 @@ async function animateSpin(e,next){
         await anim.finished.catch(()=>{}); rotor.style.transform='rotate('+degrees+'deg)'; anim.cancel();
     }
     sound(false);
+    if(motion(next)){
+        rotor.style.transform='rotate('+degrees+'deg)';
+        const frame=rotor.parentElement;
+        const winner=$('[data-slice="'+at+'"]',svg);
+        frame.classList.add('landed');
+        winner.classList.add('winning-slice');
+        await sleep(480);
+        frame.classList.remove('landed');
+        winner.classList.remove('winning-slice');
+    }
     result(avatar(d.player,next.version)+'<p>'+bdi(d.player.name)+' · SPIN RESULT</p><div class="reveal-icon">'+esc(d.item.icon)+'</div><h2>'+bdi(d.item.name)+'</h2>',sum(next.settings.result_ms));
-    if(motion(next)&&d.duration) await sleep(220);
     busy=false;
 }
 const crateUrl=esc(appUrl('assets/crate.svg'));

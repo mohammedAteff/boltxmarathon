@@ -39,7 +39,7 @@ button,input,select,textarea{font:inherit} button,a,input,select,textarea{touch-
 .capacity{width:max-content;max-width:100%;margin:9px 0 7px auto;padding:4px 11px;border:1px solid #a342d34f;border-radius:20px;background:#240835;font:800 clamp(10px,1vw,14px)/1 var(--cond)}.players-right .capacity{margin-left:0}.capacity b{margin-left:8px;font-size:1.2em}.capacity i{font-style:normal;color:#ed7cff}
 .inventory{list-style:none;padding:0;margin:0;display:grid;gap:4px;max-height:115px;overflow:auto;scrollbar-width:thin}.inventory li{background:#6b31834a;border:1px solid #ca62ec20;border-radius:18px;padding:3px 8px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:clamp(10px,1.12vw,15px);font-weight:700;overflow-wrap:anywhere}.inventory button{padding:0 3px;border:0;background:transparent;color:#f4b3ff;font-weight:800}.empty-player{opacity:.54;text-align:center;font-size:.75rem;margin:8px 0}
 .spin-wrap{position:relative;display:grid;justify-items:center;min-height:clamp(75px,12vh,135px);align-items:center}
-.spin{width:clamp(82px,10.2vh,122px);padding:0;border:0;background:transparent;transition:transform .18s,filter .2s;clip-path:polygon(69.6% 2%,95% 11.5%,98% 17%,96% 20%,62% 40.4%,83% 49%,88% 54%,87% 60%,83% 64%,11% 98%,39.5% 62%,1.5% 47%)}
+.spin{width:clamp(132px,17vh,215px);padding:0;border:0;background:transparent;transition:transform .18s,filter .2s;clip-path:polygon(90% 24%,98% 56%,96% 67%,61% 55%,69% 81%,68% 92%,60% 97%,2% 63%,38% 54%,28% 4%)}
 .spin-wrap:has(.spin){filter:drop-shadow(0 0 6px #d900fd) drop-shadow(0 0 15px #9200e5)}
 .spin svg{width:100%;height:auto}.spin path{fill:url(#spinfill);stroke:#e3a7ff;stroke-width:4;stroke-linejoin:round}.spin text{fill:white;font:italic 900 46px var(--display);paint-order:stroke;stroke:#501764;stroke-width:2}.spin:not(:disabled):hover{transform:scale(1.065);filter:brightness(1.25)}.spin:not(:disabled):active{transform:scale(.91)}.spin:focus-visible path{stroke:white;stroke-width:9}.spin:disabled{opacity:.65}
 .undo,.quiet{background:#1a0827d9;border:1px solid #d56af4;border-radius:30px;padding:7px 12px;font:800 clamp(10px,1vw,13px)/1.2 var(--cond);text-decoration:none;white-space:nowrap}.undo{position:absolute;right:86%;z-index:1}.undo:hover,.quiet:hover{background:#471568}
@@ -78,7 +78,7 @@ dialog::backdrop{background:#0a01197d}dialog .close{position:absolute;right:12px
   .wheel-layout{margin-top:clamp(23px,3.15vh,34px)}
   .wheel-area{width:clamp(235px,min(46vw,48vh),620px)}
   .spin-wrap{min-height:0}
-  .spin{width:clamp(82px,10.2vh,122px)}
+  .spin{width:clamp(132px,17vh,215px)}
   .status-bar{padding:8px 0}
 }
 @media(max-width:530px){.player-head{padding-left:36px}.players-right .player-head{padding-right:36px}}
@@ -120,4 +120,38 @@ dialog::backdrop{background:#0a01197d}dialog .close{position:absolute;right:12px
 @media(max-width:650px) {
   .arena-art-left { left:-22%; }
   .arena-art-right { right:-22%; }
+}
+
+.landing-strike {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:visible;
+  pointer-events:none;
+  z-index:3;
+  opacity:0;
+  fill:none;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  filter:drop-shadow(0 0 8px #d536ff) drop-shadow(0 0 16px #7e23ff);
+}
+.strike-core { stroke:#fff4ff; stroke-width:6; }
+.strike-branch { stroke:#d28aff; stroke-width:3; }
+.strike-ring { stroke:#efb1ff; stroke-width:3; transform-origin:250px 123px; }
+.landed .landing-strike { animation:landing-strike .48s ease-out both; }
+.landed .strike-ring { animation:landing-ring .48s ease-out both; }
+.winning-slice { animation:landing-slice .48s ease-out both; }
+@keyframes landing-strike {
+  from { opacity:0; transform:translateY(-10px); }
+  20% { opacity:1; transform:none; }
+  to { opacity:0; transform:none; }
+}
+@keyframes landing-ring {
+  from { opacity:1; transform:scale(.25); }
+  to { opacity:0; transform:scale(2.5); }
+}
+@keyframes landing-slice {
+  20% { filter:brightness(1.65); }
+  to { filter:brightness(1); }
 }

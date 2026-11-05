@@ -5,7 +5,7 @@ if(!isset($_SESSION['admin'])) { header('Location: ../auth/login.php'); exit; }
 $csrf=token(); session_write_close();
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Control room · BOLTX</title><link rel="icon" type="image/png" href="../assets/boltx-icon.png"><link rel="stylesheet" href="../assets/style.css"><script type="module" src="../assets/admin.js"></script></head>
+<title>Control room · BOLTX</title><link rel="icon" type="image/svg+xml" href="../assets/boltx-icon.svg"><link rel="stylesheet" href="../assets/style.css"><script type="module" src="../assets/admin.js"></script></head>
 <body class="admin" data-csrf="<?=h($csrf)?>">
 <main><header class="admin-header"><div><img class="brand" src="../assets/boltx-logo.svg" alt="BOLTX"><h1>Control room</h1></div>
 <nav class="actions" aria-label="Game views"><a href="../wheel.php" target="_blank">Operate wheel ↗</a><a href="../boxes.php" target="_blank">Operate boxes ↗</a><a href="../wheel.php?display" target="_blank">Wheel display ↗</a><a href="../boxes.php?display" target="_blank">Box display ↗</a>

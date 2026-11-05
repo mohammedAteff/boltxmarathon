@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 335 94" role="img" aria-label="BOLTX">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 356 94" role="img" aria-label="BOLTX">
 <!-- Transparent vector trace of the supplied BOLTX symbol. -->
 <defs>
-  <linearGradient id="violet" x2=".78" y2="1"><stop stop-color="#8d00ed"/><stop offset=".55" stop-color="#5c00bb"/><stop offset="1" stop-color="#543280"/></linearGradient>
+  <linearGradient id="violet" x2=".78" y2="1"><stop stop-color="#a533ff"/><stop offset=".55" stop-color="#740ce0"/><stop offset="1" stop-color="#623d9a"/></linearGradient>
   <linearGradient id="graphite" x2=".72" y2="1"><stop stop-color="#6b6573"/><stop offset="1" stop-color="#3c3545"/></linearGradient>
 </defs>
 <g transform="translate(-6 -6) scale(.29)">
@@ -9,6 +9,6 @@
   <path fill="url(#violet)" d="M214 57 266 80Q280 86 272 97L194 153 239 174Q257 182 250 199Q248 204 242 209L87 297 150 206 65 168Z"/>
   <path fill="#b66df3" opacity=".15" d="M65 168 194 153 239 174Q257 182 250 199Q248 204 242 209L87 297 150 206Z"/>
 </g>
-<g fill="#fff" transform="translate(87 17) skewX(-13)">
+<g fill="#fff" transform="translate(107 17) skewX(-13)">
 <path fill-rule="evenodd" d="M0 0h32q15 0 15 14 0 9-8 12 11 3 11 15 0 14-17 14H0Zm12 11v10h17q6 0 6-5t-6-5Zm0 21v12h18q7 0 7-6t-7-6Z M55 11 66 0h28l11 11v33L94 55H66L55 44Zm12 4v25l4 4h18l4-4V15l-4-4H71Z M111 0h12v44h28v11h-40Z M148 0h46v11h-17v44h-12V11h-17Z M195 0h15l12 17 12-17h15l-20 27 21 28h-15l-13-18-13 18h-15l21-28Z"/>
 </g></svg>
