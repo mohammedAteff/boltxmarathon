@@ -35,10 +35,11 @@ $wheel=$view==='wheel';
 <div class="spin-wrap">
 <button id="undo" class="undo" type="button" <?=$operator?'':'hidden'?>>↶ &nbsp; UNDO LAST SPIN</button>
 <button id="spin" class="spin" type="button" disabled aria-label="Spin wheel">
-<svg viewBox="-172 151 302 180" aria-hidden="true">
-<defs><linearGradient id="spinfill" x2=".75" y2="1"><stop stop-color="#ad44ff"/><stop offset=".53" stop-color="#6400d4"/><stop offset="1" stop-color="#381074"/></linearGradient></defs>
-<path transform="rotate(48)" d="M214 57 266 80Q280 86 272 97L194 153 239 174Q257 182 250 199Q248 204 242 209L87 297 150 206 65 168Z"/>
-<text x="-13" y="244" text-anchor="middle">SPIN</text>
+<svg viewBox="58 50 224 254" aria-hidden="true">
+<defs><linearGradient id="spinfill" x2=".78" y2="1"><stop stop-color="#a533ff"/><stop offset=".55" stop-color="#740ce0"/><stop offset="1" stop-color="#623d9a"/></linearGradient></defs>
+<path class="spin-bolt" fill="url(#spinfill)" d="M214 57 266 80Q280 86 272 97L194 153 239 174Q257 182 250 199Q248 204 242 209L87 297 150 206 65 168Z"/>
+<path fill="#d99dff" opacity=".18" d="M65 168 194 153 239 174Q257 182 250 199Q248 204 242 209L87 297 150 206Z"/>
+<text x="168" y="191" text-anchor="middle">SPIN</text>
 </svg>
 </button></div>
 </div>
