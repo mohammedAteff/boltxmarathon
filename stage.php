@@ -5,10 +5,13 @@ $csrf=$operator?token():''; session_write_close();
 $wheel=$view==='wheel';
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BOLTX <?= $wheel?'Spin Wheel':'Mystery Boxes' ?></title><link rel="stylesheet" href="assets/style.css">
+<title>BOLTX <?= $wheel?'Spin Wheel':'Mystery Boxes' ?></title><link rel="icon" type="image/png" href="assets/boltx-icon.png"><link rel="stylesheet" href="assets/style.css">
 <script type="module" src="assets/stage.js"></script></head>
 <body class="stage <?=$view?>" data-view="<?=$view?>" data-csrf="<?=h($csrf)?>">
-<div class="arena-decor" aria-hidden="true"><i></i><i></i><span class="scenery scenery-left"></span><span class="scenery scenery-right"></span></div>
+<div class="arena-decor" aria-hidden="true">
+<i></i><i></i><span class="scenery scenery-left"></span><span class="scenery scenery-right"></span>
+<span class="arena-art arena-art-left"></span><span class="arena-art arena-art-right"></span><span class="arena-sparks"></span>
+</div>
 <main class="stage-main">
 <header class="hero">
 <a href="./" aria-label="BOLTX home"><img class="brand" src="assets/boltx-logo.svg" alt="BOLTX"></a>
@@ -27,7 +30,11 @@ $wheel=$view==='wheel';
 <div class="spin-wrap">
 <button id="undo" class="undo" type="button" <?=$operator?'':'hidden'?>>↶ &nbsp; UNDO LAST SPIN</button>
 <button id="spin" class="spin" type="button" disabled aria-label="Spin wheel">
-<svg viewBox="0 0 260 144" aria-hidden="true"><defs><linearGradient id="spinfill" x2="0.8" y2="1"><stop stop-color="#e500ff"/><stop offset=".52" stop-color="#6200a2"/><stop offset="1" stop-color="#250041"/></linearGradient></defs><path d="M56 39 105 35 217 4 183 53 250 53 174 91 34 137 63 92 9 92Z"/><text x="129" y="82" text-anchor="middle">SPIN</text></svg>
+<svg viewBox="58 49 224 256" aria-hidden="true">
+<defs><linearGradient id="spinfill" x2=".75" y2="1"><stop stop-color="#ad44ff"/><stop offset=".53" stop-color="#6400d4"/><stop offset="1" stop-color="#381074"/></linearGradient></defs>
+<path d="M214 57 266 80Q280 86 272 97L194 153 239 174Q257 182 250 199Q248 204 242 209L87 297 150 206 65 168Z"/>
+<text x="163" y="179" text-anchor="middle">SPIN</text>
+</svg>
 </button></div>
 </div>
 <aside id="players-right" class="players players-right" aria-label="More players"></aside>

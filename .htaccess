@@ -5,5 +5,5 @@ RewriteRule ^$ public/index.php [END]
 RewriteCond %{REQUEST_URI} ^(/[A-Za-z0-9_/-]*admin)$
 RewriteRule ^admin$ %1/ [R=302,L]
 RewriteRule ^admin/$ public/admin/index.php [END]
-RewriteRule ^((?:index|wheel|boxes|api|avatar)\.php|auth/(?:login|logout)\.php|assets/[A-Za-z0-9_-]+\.(?:css|js|svg))$ public/$1 [END]
+RewriteRule ^((?:index|wheel|boxes|api|avatar)\.php|auth/(?:login|logout)\.php|assets/[A-Za-z0-9_-]+\.(?:css|js|svg|png))$ public/$1 [END]
 RewriteRule ^ - [R=404,L]

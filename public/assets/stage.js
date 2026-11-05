@@ -102,6 +102,16 @@ async function animateSpin(e,next){
 }
 const crateUrl=esc(appUrl('assets/crate.svg'));
 const crateMarkup='<span class="crate-glow"></span><svg class="lid" viewBox="0 0 200 170" aria-hidden="true"><use href="'+crateUrl+'#lid"/></svg><span class="paper" hidden></span><svg class="base" viewBox="0 0 200 170" aria-hidden="true"><use href="'+crateUrl+'#base"/></svg><span class="number"></span>';
+const boxReveals=[];
+function showBoxResult(box,ms=0){
+    result('<div class="paper-modal"><p style="color:inherit">BOX '+box.number+'</p><div class="reveal-icon">'+esc(box.icon)+'</div><h2>'+bdi(box.text)+'</h2></div>',ms);
+}
+function showNextBox(){
+    if(reveal.open || !boxReveals.length) return;
+    const {box,ms}=boxReveals.shift();
+    showBoxResult(box,ms);
+}
+if(!wheel) reveal.addEventListener('close',showNextBox);
 function setBox(el,b,latest,opened){
     el.classList.toggle('open',opened); el.classList.toggle('latest',opened&&b.open_seq===latest);
     el.disabled=(!operator&&!opened);
@@ -113,7 +123,7 @@ function setBox(el,b,latest,opened){
         paper.classList.toggle('long',Array.from(b.text).length>36);
     }
 }
-function renderBoxes(s){
+async function renderBoxes(s){
     counter.innerHTML=icon('box')+' BOXES <strong>'+s.boxes.length+'</strong>';
     grid.style.setProperty('--cols',s.boxes.length<=4?Math.max(1,s.boxes.length):s.boxes.length>20?6:5);
     grid.style.maxWidth=s.boxes.length<5?Math.max(210,s.boxes.length*200)+'px':'';
@@ -123,25 +133,32 @@ function renderBoxes(s){
     const latest=Math.max(0,...s.boxes.map(b=>b.open_seq||0));
     const live=new Map(Array.from(grid.children,el=>[Number(el.dataset.id),el]));
     const openings=[];
+    const revealIds=new Set((s.events||[]).map(e=>e.id));
+    const newlyOpened=[];
     for(const [i,b] of s.boxes.entries()){
         let el=live.get(b.id);
         if(!el){el=document.createElement('button'); el.type='button'; el.className='crate'; el.dataset.id=b.id; el.innerHTML=crateMarkup;}
         if(grid.children[i]!==el) grid.insertBefore(el,grid.children[i]||null);
         live.delete(b.id);
-        const animated=motion(s)&&s.events?.some(e=>e.id===b.open_seq)&&!el.classList.contains('open');
+        const isReveal=revealIds.has(b.open_seq);
+        if(isReveal) newlyOpened.push(b);
+        const animated=motion(s)&&isReveal;
         if(animated){
             setBox(el,b,latest,false); el.disabled=true; el.classList.add('charging');
-            openings.push(sleep(s.settings.box_ms*.24).then(()=>{
-                if(el.dataset.seq!==String(b.open_seq)) return;
+            openings.push(sleep(s.settings.box_ms*.24).then(async ()=>{
                 el.classList.remove('charging'); el.classList.add('burst'); setBox(el,b,latest,true); sound(true);
-                setTimeout(()=>el.classList.remove('burst'),s.settings.box_ms);
+                await sleep(s.settings.box_ms*.76);
+                el.classList.remove('burst');
             }));
         } else {el.classList.remove('charging'); setBox(el,b,latest,!!b.opened_at);}
-        el.dataset.seq=b.open_seq||'';
     }
     live.forEach(el=>el.remove());
     noticeText(s.boxes.length?'':'No boxes have been added yet.');
-    return Promise.all(openings);
+    await Promise.all(openings);
+    for(const box of newlyOpened.sort((a,b)=>a.open_seq-b.open_seq)){
+        boxReveals.push({box,ms:sum(s.settings.result_ms)});
+    }
+    showNextBox();
 }
 async function sync(){
     if(refreshing) return;
@@ -174,8 +191,9 @@ if(wheel){
         const target=e.target.closest('.crate');
         const b=state?.boxes.find(b=>b.id===Number(target?.dataset.id));
         if(!b) return;
-        if(b.opened_at && target.classList.contains('open')) result('<div class="paper-modal"><p style="color:inherit">BOX '+b.number+'</p><div class="reveal-icon">'+esc(b.icon)+'</div><h2>'+bdi(b.text)+'</h2></div>');
-        else act('box_open',{id:b.id});
+        if(b.opened_at){
+            if(!target.classList.contains('burst')) showBoxResult(b);
+        }else act('box_open',{id:b.id});
     };
 }
 await sync(); setInterval(sync,850);
