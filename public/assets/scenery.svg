@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 380">
+<defs>
+<linearGradient id="face" x2="1" y2="1"><stop stop-color="#290a46"/><stop offset=".7" stop-color="#10051d"/><stop offset="1" stop-color="#1b0730"/></linearGradient>
+<linearGradient id="side"><stop stop-color="#12041e"/><stop offset="1" stop-color="#29073c"/></linearGradient>
+<linearGradient id="lid" x2="0" y2="1"><stop stop-color="#8c3ad4"/><stop offset="1" stop-color="#250940"/></linearGradient>
+<radialGradient id="fog"><stop stop-color="#ae11fa" stop-opacity=".66"/><stop offset="1" stop-color="#7d01d3" stop-opacity="0"/></radialGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
+</defs>
+<g fill="url(#fog)">
+<ellipse cx="247" cy="126" rx="213" ry="113"/><ellipse cx="325" cy="88" rx="112" ry="84"/><ellipse cx="170" cy="190" rx="150" ry="77"/>
+</g>
+<g stroke="#663485" stroke-width="2">
+<path fill="url(#side)" d="M26 244 116 203 116 376 26 376Z"/><path fill="url(#face)" d="M116 203 438 244 438 376H116Z"/><path fill="url(#lid)" d="M26 244 116 203 438 244 353 270Z"/>
+<path fill="url(#side)" d="M67 192 159 153v143l-92-13Z"/><path fill="url(#face)" d="M159 153 424 190v131l-265-25Z"/><path fill="url(#lid)" d="M67 192 159 153 424 190 340 231Z"/>
+<path fill="url(#side)" d="M180 106 234 77v96l-54 25Z"/><path fill="url(#face)" d="M234 77 387 105v95l-153-27Z"/><path fill="url(#lid)" d="M180 106 234 77 387 105 341 133Z"/>
+</g>
+<g fill="none" stroke="#46186a" stroke-width="4">
+<path d="M80 236v64m31-77v85m98-83v80m30-84v88m83-77v85m73-104v96M195 119v56m29-63v48m29-46v61m120-57v70"/>
+</g>
+<g fill="none" stroke="#f339ff" stroke-width="9" filter="url(#glow)"><path d="m70 192 90-39 264 37M179 106l55-29 153 28"/><path d="m38 244 78-41 321 41"/></g>
+<g fill="none" stroke="#ec87ff" stroke-width="2"><path d="m70 192 90-39 264 37M179 106l55-29 153 28"/><path d="m38 244 78-41 321 41"/></g>
+<path fill="#f6aaff" filter="url(#glow)" d="M315 111h16l-16 20 16 5-42 27 16-28-13-5Z"/><path fill="#fff0ff" d="M315 111h16l-16 20 16 5-42 27 16-28-13-5Z"/>
+</svg>

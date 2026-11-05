@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# Only public routes are mapped into the public directory.
+RewriteRule ^$ public/index.php [END]
+RewriteRule ^admin$ admin/ [R=301,L]
+RewriteRule ^admin/$ public/admin/index.php [END]
+RewriteRule ^((?:index|wheel|boxes|api|avatar)\.php|auth/(?:login|logout)\.php|assets/[A-Za-z0-9_-]+\.(?:css|js|svg))$ public/$1 [END]
+RewriteRule ^ - [R=404,L]

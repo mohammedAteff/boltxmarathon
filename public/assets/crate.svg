@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="metal" x2="1" y2="1"><stop stop-color="#55217d"/><stop offset=".35" stop-color="#35134e"/><stop offset=".74" stop-color="#1b082d"/><stop offset="1" stop-color="#481662"/></linearGradient>
+<linearGradient id="top" x2="0" y2="1"><stop stop-color="#431872"/><stop offset=".6" stop-color="#7738a8"/><stop offset=".65" stop-color="#b573de"/><stop offset="1" stop-color="#3a145e"/></linearGradient>
+<linearGradient id="edge" x2="0" y2="1"><stop stop-color="#b875ff"/><stop offset=".23" stop-color="#6739a2"/><stop offset=".52" stop-color="#39145d"/><stop offset=".53" stop-color="#281043"/><stop offset="1" stop-color="#512075"/></linearGradient>
+<linearGradient id="energy" x2="1" y2="1"><stop stop-color="#fff1ff"/><stop offset=".5" stop-color="#ff97fc"/><stop offset="1" stop-color="#f334ee"/></linearGradient>
+<filter id="blur" x="-.5" y="-1" width="2" height="3"><feGaussianBlur stdDeviation="4"/></filter>
+</defs>
+<symbol id="base" viewBox="0 0 200 170">
+<path d="M12 65H188V138L176 152H25L12 140Z" fill="url(#metal)" stroke="#a147dd" stroke-width="2"/>
+<path d="M24 75H176V137L164 145H36L24 135Z" fill="#150620" opacity=".52" stroke="#7b35a6"/>
+<path d="M39 80H160V132H39Z" fill="url(#metal)" stroke="#090311"/>
+<path d="M12 84H37V143L26 151 12 140Zm176 0H163V143L175 151 188 140Z" fill="url(#edge)" stroke="#7b3da4" stroke-width="1.2"/>
+<path d="M16 110H26V134H16ZM174 110H184V134H174Z" fill="#26123d"/>
+<path d="M13 136 27 149H173l14-13" fill="none" stroke="#dd00ff" stroke-width="11" filter="url(#blur)"/>
+<path d="M13 136 27 149H173l14-13" fill="none" stroke="#f36eff" stroke-width="5"/>
+<path d="M13 136 27 149H173l14-13" fill="none" stroke="#fff1ff" stroke-width="2"/>
+<path d="M109 77h15l-22 23 17 5-48 29 22-27-14-4Z" fill="#e83cff" filter="url(#blur)"/>
+<path d="M109 77h15l-22 23 17 5-48 29 22-27-14-4Z" fill="url(#energy)"/>
+<path d="M13 95h17m-17 6h17m139-6h17m-17 6h17" stroke="#9853c5" opacity=".65"/>
+<path d="M46 132h20m65 0h22" stroke="#5c2e7a"/>
+</symbol>
+<symbol id="lid" viewBox="0 0 200 170">
+<path d="M11 56 35 28H165l24 28v22l-11 7H22l-11-7Z" fill="url(#top)" stroke="#a064d3" stroke-width="2"/>
+<path d="M11 56H189v22l-11 7H22l-11-7Z" fill="url(#metal)" stroke="#3b135c"/>
+<path d="M41 30H159l17 23H24Z" fill="#34125e" stroke="#c37bf4" stroke-opacity=".68"/>
+<path d="M37 42H163M52 30 37 53m111-23 15 23" stroke="#9459bc" stroke-opacity=".65"/>
+<path d="m13 56 24-27h18L36 56v23L24 85 11 78Zm174 0-24-27h-18l19 27v23l12 6 13-7Z" fill="url(#edge)" stroke="#a762cc"/>
+<path d="M12 56H36m128 0h23M48 56h104" stroke="#c784ee" stroke-width="2"/>
+<path d="m103 31-18 9 14 1-7 8 24-11-15-1 10-6Z" fill="#e764ff"/>
+<path d="M72 54h56" stroke="#fa8bff" stroke-width="7" filter="url(#blur)"/>
+<path d="M80 54h40" stroke="#ffd4ff" stroke-width="2"/>
+<g fill="#10051a"><circle cx="22" cy="64" r="2.5"/><circle cx="27" cy="75" r="2.5"/><circle cx="178" cy="64" r="2.5"/><circle cx="173" cy="75" r="2.5"/><circle cx="52" cy="63" r="2"/><circle cx="148" cy="63" r="2"/></g>
+</symbol>
+</svg>
