@@ -115,7 +115,7 @@ $formUrl='?mode='.$mode.$append.($secret!==''?'&token='.rawurlencode($secret):''
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?=h($headings[$mode])?> · BOLTX</title><link rel="icon" href="../assets/boltx-icon.svg">
-<link rel="stylesheet" href="../assets/style.css?v=quick-add"><script type="module" src="../assets/locale.js?v=quick-add"></script>
+<link rel="stylesheet" href="../assets/style.css?v=quick-add-2"><script type="module" src="../assets/locale.js?v=quick-add"></script>
 <?php if($showGoogle): ?><script src="https://accounts.google.com/gsi/client" defer></script><script type="module" src="../assets/google-login.js?v=quick-add"></script><?php endif ?>
 </head><body class="portal account-portal"><main class="login panel account-card">
 <a href="../"><img class="brand" src="../assets/boltx-logo.svg" alt="BOLTX"></a>

@@ -329,7 +329,8 @@ dialog::backdrop{background:#0a01197d}dialog .close{position:absolute;right:12px
 .account-links a { color:#edccff; }
 .account-divider { display:flex; align-items:center; gap:10px; margin:12px 0; color:#d5b3e7; font-size:.72rem; }
 .account-divider::before,.account-divider::after { content:""; flex:1; height:1px; background:#653586; }
-#google-button { display:flex; justify-content:center; min-height:40px; margin:18px auto 0; width:min(100%,320px); }
+#google-button { display:flex; justify-content:center; min-height:40px; margin:18px auto 0; width:min(100%,320px); color-scheme:light; }
+#google-button iframe { border-radius:999px; }
 #google-status:empty { display:none; }
 .account-feedback { padding:10px 12px; border:1px solid #a760dd; border-radius:8px; background:#29113d; }
 .account-feedback.error { color:#ffd3e2; border-color:#a74678; }
