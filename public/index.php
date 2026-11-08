@@ -8,4 +8,4 @@ require dirname(__DIR__).'/config.php'; security();
 <div class="launch-grid">
 <section class="panel"><h2>Spin Wheel</h2><div class="actions"><a class="quiet" href="admin/?tab=wheel&amp;create=1">Create new</a><a class="quiet" href="open.php?kind=wheel">Open existing</a></div></section>
 <section class="panel"><h2>Mystery Boxes</h2><div class="actions"><a class="quiet" href="admin/?tab=boxes&amp;create=1">Create new</a><a class="quiet" href="open.php?kind=boxes">Open existing</a></div></section>
-</div><a class="quiet" href="admin/">Operator control room</a></main></body></html>
+</div></main></body></html>
