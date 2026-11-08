@@ -1,0 +1,13 @@
+{
+    "name": "boltx/challenge-platform",
+    "require": {
+        "php": ">=8.2",
+        "ext-openssl": "*",
+        "google/auth": "^1.50",
+        "phpseclib/phpseclib": "^3.0"
+    },
+    "config": {
+        "platform": {"php": "8.2.12"},
+        "sort-packages": true
+    }
+}

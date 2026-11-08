@@ -14,7 +14,7 @@ $csrf=$operator?token():''; session_write_close();
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BOLTX <?= $wheel?'Spin Wheel':'Mystery Boxes' ?></title><link rel="icon" type="image/svg+xml" href="assets/boltx-icon.svg"><link rel="stylesheet" href="assets/style.css?v=2">
-<script type="module" src="assets/stage.js?v=2"></script></head>
+<script type="module" src="assets/stage.js?v=accounts"></script></head>
 <body class="stage <?=$view?>" data-view="<?=$view?>" data-game="<?=$game?>" data-role="<?=$role?>" data-csrf="<?=h($csrf)?>" data-language="<?=h(json_decode($challenge['options']??'{}',true)['language']??'en')?>">
 <div class="arena-decor" aria-hidden="true">
 <i></i><i></i><span class="scenery scenery-left"></span><span class="scenery scenery-right"></span>
@@ -41,7 +41,7 @@ $csrf=$operator?token():''; session_write_close();
 </svg>
 </div>
 <div class="spin-wrap">
-<button id="undo" class="undo" type="button" <?=$role==='admin'?'':'hidden'?>>↶ &nbsp; UNDO LAST SPIN</button>
+<button id="undo" class="undo" type="button" <?=in_array($role,['admin','owner'],true)?'':'hidden'?>>↶ &nbsp; UNDO LAST SPIN</button>
 <button id="spin" class="spin" type="button" disabled aria-label="Spin wheel">
 <svg viewBox="58 50 224 254" aria-hidden="true">
 <defs><linearGradient id="spinfill" x2=".78" y2="1"><stop stop-color="#a533ff"/><stop offset=".55" stop-color="#740ce0"/><stop offset="1" stop-color="#623d9a"/></linearGradient></defs>

@@ -10,7 +10,7 @@ function settings(?array $game=null): array {
     ],$game ? json_decode($game['options']??'{}',true,32,JSON_THROW_ON_ERROR) : []);
 }
 function game_set(int $id,string $kind): array {
-    $game=one('SELECT *,access_expires_at IS NOT NULL AND access_expires_at<=CURRENT_TIMESTAMP AS access_expired FROM game_sets WHERE id=? AND kind=?',[$id,$kind]);
+    $game=one('SELECT *,access_expires_at IS NOT NULL AND access_expires_at<=CURRENT_TIMESTAMP AS access_expired FROM game_sets WHERE id=? AND kind=? AND deleted_at IS NULL',[$id,$kind]);
     need($game!==null,'This game no longer exists.');
     return $game;
 }
@@ -47,12 +47,21 @@ function action(string $a,array $d,string $source,?array &$extra=null): int {
         $clock=one('SELECT version FROM settings WHERE id=1 FOR UPDATE')['version'];
         $v=$clock+1;
         $kind=str_starts_with($a,'box_') || str_starts_with($a,'challenge_') ? 'boxes' : 'wheel';
-        if(in_array($a,['game_create','game_rename','game_share','game_archive','settings'],true)) {
+        if(in_array($a,['game_create','game_rename','game_share','game_archive','game_delete','settings'],true)) {
             $kind=$d['kind']??'wheel';
             need(in_array($kind,['wheel','boxes'],true),'Choose a game type.');
         }
         $game=number($d['game']??($kind==='wheel'?1:2));
         $target=$a==='game_create'?null:game_set($game,$kind);
+        if(isset($d['_account_id'])){
+            $actor=one('SELECT id,role,auth_version FROM user_accounts WHERE id=? AND disabled=0 FOR UPDATE',[$d['_account_id']]);
+            if(!$actor || $actor['auth_version']!==$d['_auth_version']){
+                http_response_code(401); throw new Rule('Sign in to continue.');
+            }
+            if($target && !can_manage($actor,$target)){
+                http_response_code(404); throw new Rule('Challenge unavailable.');
+            }
+        }
         $current=$target['current_player']??null;
         $s=settings($target);
         if(isset($d['_access_version'])) {
@@ -105,7 +114,8 @@ function action(string $a,array $d,string $source,?array &$extra=null): int {
                 $defaults['opening_mode']=($d['opening_mode']??'')==='key'?'key':'shake';
                 $defaults['scratch']=flag($d['scratch']??0);
             }
-            sql('INSERT INTO game_sets(kind,name,owner_id,options) VALUES (?,?,?,?)',[$kind,$text('name',100),$d['_owner']??null,json_encode($defaults,JSON_THROW_ON_ERROR)]);
+            need(isset($actor),'Sign in to continue.');
+            sql('INSERT INTO game_sets(kind,name,owner_user_id,options) VALUES (?,?,?,?)',[$kind,$text('name',100),$actor['id'],json_encode($defaults,JSON_THROW_ON_ERROR)]);
             $game=(int)db()->lastInsertId();
             $lines=function(string $key,int $length) use($text){
                 $entries=array_values(array_filter(array_map('trim',preg_split('/\R/u',$text($key,12000,true))),fn($line)=>$line!==''));
@@ -131,11 +141,14 @@ function action(string $a,array $d,string $source,?array &$extra=null): int {
             sql('UPDATE game_sets SET name=? WHERE id=?',[$text('name',100),$game]);
             break;
         case 'game_share':
-            if(!empty($d['revoke'])) sql('UPDATE game_sets SET code_hash=NULL,link_hash=NULL,display_hash=NULL,access_version=access_version+1 WHERE id=?',[$game]);
+            if(!empty($d['revoke'])) sql('UPDATE game_sets SET code_hash=NULL,link_hash=NULL,display_hash=NULL,share_envelope=NULL,access_version=access_version+1 WHERE id=?',[$game]);
             else $extra=issue_access($game,$d['role']??'view',number($d['expires_days']??0,0,365));
             break;
         case 'game_archive':
-            sql('UPDATE game_sets SET archived=?,access_version=access_version+1,code_hash=NULL,link_hash=NULL,display_hash=NULL WHERE id=?',[flag($d['archived']??1),$game]);
+            sql('UPDATE game_sets SET archived=?,access_version=access_version+1,code_hash=NULL,link_hash=NULL,display_hash=NULL,share_envelope=NULL WHERE id=?',[flag($d['archived']??1),$game]);
+            break;
+        case 'game_delete':
+            sql('UPDATE game_sets SET deleted_at=CURRENT_TIMESTAMP,archived=1,access_version=access_version+1,code_hash=NULL,link_hash=NULL,display_hash=NULL,share_envelope=NULL WHERE id=?',[$game]);
             break;
         case 'spin':
         case 'spin_accept':
@@ -361,20 +374,34 @@ function action(string $a,array $d,string $source,?array &$extra=null): int {
     } catch(Throwable $e) { $db->rollBack(); throw $e; }
 }
 
-function state(string $view,int $since,int $wheel=1,int $event=2,bool $scratchPreview=false): array {
+function state(string $view,int $since,int $wheel=1,int $event=2,bool $scratchPreview=false,?int $owner=null): array {
     $db=db(); $db->beginTransaction();
     try {
-        $wheelSet=$view==='boxes'?null:game_set($wheel,'wheel');
-        $boxSet=$view==='wheel'?null:game_set($event,'boxes');
+        $games=[];
+        if($view==='admin'){
+            $games=rows('SELECT id,kind,name,owner_user_id,created_at,updated_at,archived,share_role,link_hash IS NOT NULL AS shared
+                FROM game_sets WHERE deleted_at IS NULL'.($owner!==null?' AND owner_user_id=?':'').' ORDER BY id',$owner!==null?[$owner]:[]);
+            $byKind=['wheel'=>[],'boxes'=>[]];
+            foreach($games as $entry) $byKind[$entry['kind']][]=$entry['id'];
+            foreach(['wheel'=>$wheel,'boxes'=>$event] as $kind=>$selected){
+                if($selected!==0 && !in_array($selected,$byKind[$kind],true)){
+                    http_response_code(404); throw new Rule('Challenge unavailable.');
+                }
+            }
+            $wheel=$wheel?:($byKind['wheel'][0]??0);
+            $event=$event?:($byKind['boxes'][0]??0);
+        }
+        $wheelSet=$view==='boxes'||!$wheel?null:game_set($wheel,'wheel');
+        $boxSet=$view==='wheel'||!$event?null:game_set($event,'boxes');
         $s=settings($wheelSet??$boxSet);
         $out=['version'=>$view==='admin'?$s['version']:($wheelSet??$boxSet)['state_version']];
         unset($s['version'],$s['current_player']);
         if($out['version']!==$since) {
             $out['settings']=$s;
             if($view!=='boxes') {
-                $p=players($wheel); $pool=pool($wheel);
+                $p=$wheelSet?players($wheel):[]; $pool=$wheelSet?pool($wheel):[];
                 $out['players']=$view==='admin'?$p:array_values(array_filter($p,fn($p)=>$p['active']));
-                $out['current']=turn($p,$wheelSet['current_player'])['id']??null;
+                $out['current']=turn($p,$wheelSet['current_player']??null)['id']??null;
                 $out['pool']=$pool;
                 $out['remaining']=array_sum(array_column($pool,'qty'));
                 $out['total']=one("SELECT COUNT(*) AS n FROM units u JOIN items i ON i.id=u.item_id WHERE i.game_id=? AND u.status<>'removed'",[$wheel])['n'];
@@ -391,7 +418,8 @@ function state(string $view,int $since,int $wheel=1,int $event=2,bool $scratchPr
                 $out['boxes']=$boxes;
             }
             if($view==='admin') {
-                $out['games']=rows('SELECT id,kind,name,owner_id,created_at,updated_at,archived,share_role,link_hash IS NOT NULL AS shared FROM game_sets ORDER BY id');
+                $out['games']=$games;
+                $out['selected']=['wheel'=>$wheel,'boxes'=>$event];
                 $out['box_settings']=settings($boxSet);
                 $out['items']=rows('SELECT * FROM items WHERE game_id=? ORDER BY id',[$wheel]);
                 $out['units']=rows('SELECT u.* FROM units u JOIN items i ON i.id=u.item_id WHERE i.game_id=? ORDER BY u.id',[$wheel]);

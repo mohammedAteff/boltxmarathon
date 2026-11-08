@@ -1,11 +1,19 @@
 <?php
 declare(strict_types=1);
 
+function local_config(): array {
+    static $local;
+    $localFile=__DIR__.'/config.local.php';
+    return $local??=is_file($localFile)?require $localFile:[];
+}
+function app_setting(string $env,string $key): string {
+    $value=getenv($env);
+    return $value!==false?$value:(string)(local_config()[$key]??'');
+}
 function db(): PDO {
     static $db;
     if($db) return $db;
-    $localFile=__DIR__.'/config.local.php';
-    $local=is_file($localFile)?require $localFile:[];
+    $local=local_config();
     return $db ??= new PDO(
         getenv('BOLTX_DSN') ?: ($local['dsn'] ?? 'mysql:host=127.0.0.1;dbname=boltx;charset=utf8mb4'),
         getenv('BOLTX_DB_USER') ?: ($local['user'] ?? 'boltx'),
@@ -28,17 +36,19 @@ function session_open(): void {
     session_set_cookie_params(['path'=>'/','httponly'=>true,'secure'=>!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS']!=='off','samesite'=>'Strict']);
     session_start();
     if(isset($_SESSION['seen']) && time()-$_SESSION['seen']>28800) { $_SESSION=[]; session_regenerate_id(true); }
-    if(isset($_SESSION['admin'])) $_SESSION['seen']=time();
+    if(isset($_SESSION['admin']) || isset($_SESSION['account_id'])) $_SESSION['seen']=time();
 }
 function token(): string { return $_SESSION['csrf'] ??= bin2hex(random_bytes(32)); }
 function valid_token(mixed $value): bool { return is_string($value) && isset($_SESSION['csrf']) && hash_equals($_SESSION['csrf'],$value); }
-function security(): void {
+function security(bool $google=false): void {
     header('Cache-Control: no-store');
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
     header('Referrer-Policy: no-referrer');
     header('X-Robots-Tag: noindex, nofollow');
-    header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
+    $gis=$google?' https://accounts.google.com/gsi/':'';
+    header("Content-Security-Policy: default-src 'self'; script-src 'self'$gis; style-src 'self' 'unsafe-inline'$gis; connect-src 'self'$gis; frame-src 'self'$gis; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
+    if($google) header('Cross-Origin-Opener-Policy: same-origin-allow-popups');
 }
 class Rule extends RuntimeException {}
 function need(bool $ok,string $message): void { if(!$ok) throw new Rule($message); }

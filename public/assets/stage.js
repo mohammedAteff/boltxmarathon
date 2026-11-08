@@ -2,7 +2,7 @@ import {$,esc,bdi,csrf,request,post,icon,avatar,appUrl} from './common.js';
 import './locale.js';
 const view=document.body.dataset.view;
 const game=Number(document.body.dataset.game);
-const admin=document.body.dataset.role==='admin';
+const admin=['admin','owner'].includes(document.body.dataset.role);
 const wheel=view==='wheel', operator=Boolean(csrf), reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const counter=$('#counter'),notice=$('#notice'),reveal=$('#reveal'),content=$('#reveal-content');
 const spin=$('#spin'),undo=$('#undo'),rotor=$('#rotor'),svg=$('#segments'),grid=$('#boxes');
@@ -70,7 +70,7 @@ function card(p,s){
         '<div class="player-head">'+(current?icon('crown'):'')+'<strong>'+bdi(p.name)+'</strong></div><div class="capacity">ITEMS <b>'+p.items.length+' <i>/ '+(p.max||'∞')+'</i></b></div>'+
         (p.items.length?'<ul class="inventory">'+p.items.map(u=>'<li>'+bdi(u.name)+(admin?'<button data-unit="'+u.id+'" aria-label="Return '+esc(u.name)+' to the wheel" type="button">×</button>':'')+'</li>').join('')+'</ul>':'<p class="empty-player">'+(full?'At capacity':'No items yet')+'</p>')+
         (operator?'<div class="live-player-actions">'+(!current&&!full?'<button type="button" data-turn="'+p.id+'">Set turn</button>':'')+
-        (admin?'<a href="'+appUrl('admin/')+'?wheel='+game+'&amp;player='+p.id+'">Manage</a>':'')+'</div>':'')+'</article>';
+        (admin?'<a href="'+appUrl(document.body.dataset.role==='admin'?'admin/':'my/')+'?wheel='+game+'&amp;player='+p.id+'">Manage</a>':'')+'</div>':'')+'</article>';
 }
 function controls(){
     if(!wheel) return;

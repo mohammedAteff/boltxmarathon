@@ -1,9 +1,9 @@
 <?php
-require dirname(__DIR__,2).'/config.php';
+require dirname(__DIR__,2).'/accounts.php';
 security(); session_open();
 $create=in_array($_GET['create']??null,['wheel','boxes'],true)?$_GET['create']:'';
 $destination='../admin/'.($create?'?tab='.$create.'&create=1':'');
-if(isset($_SESSION['admin'])) { header('Location: '.$destination); exit; }
+if(is_admin(current_account())) { header('Location: '.$destination); exit; }
 $error='';
 if($_SERVER['REQUEST_METHOD']==='POST') {
     try {
@@ -15,11 +15,11 @@ if($_SERVER['REQUEST_METHOD']==='POST') {
         need($rate['attempts']<=8,'Too many attempts. Try again in 15 minutes.');
         $name=label($_POST['username']??'',80); $password=$_POST['password']??'';
         need(is_string($password) && strlen($password)<=72,'Incorrect username or password.');
-        $user=one('SELECT * FROM admins WHERE username=?',[$name]);
+        $user=one("SELECT a.*,u.hash FROM admins u JOIN user_accounts a ON a.legacy_admin_id=u.id WHERE u.username=? AND a.role='admin' AND a.disabled=0",[$name]);
         $valid=password_verify($password,$user['hash']??'$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.');
         need($valid && $user!==null,'Incorrect username or password.');
         sql('DELETE FROM login_attempts WHERE ip=?',[$ip]);
-        session_regenerate_id(true); $_SESSION=['admin'=>$user['id'],'seen'=>time()];
+        account_login($user);
         header('Location: '.$destination,true,303); exit;
     } catch(Rule $e) { $error=$e->getMessage(); }
     catch(Throwable $e) { error_log((string)$e); $error='Sign-in is unavailable. Check the database connection.'; }
@@ -33,4 +33,4 @@ if($_SERVER['REQUEST_METHOD']==='POST') {
 <label>Username<input name="username" autocomplete="username" required></label>
 <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
 <?php if($error): ?><p role="alert"><?=h($error)?></p><?php endif ?>
-<button class="primary">Sign in</button></form><a href="../">Back to games</a></main></body></html>
+<button class="primary">Sign in</button></form><a href="account.php">Sign in with email or Google</a> · <a href="../">Back to games</a></main></body></html>

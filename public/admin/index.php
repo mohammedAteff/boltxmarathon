@@ -1,19 +1,30 @@
 <?php
-require dirname(__DIR__,2).'/config.php';
+require dirname(__DIR__,2).'/accounts.php';
 security(); session_open();
-if(!isset($_SESSION['admin'])) {
-    $create=isset($_GET['create']) && in_array($_GET['tab']??null,['wheel','boxes'],true)?'?create='.$_GET['tab']:'';
-    header('Location: ../auth/login.php'.$create); exit;
+$personal=$personal??false;
+$account=current_account();
+if(!$account){
+    $intent=isset($_GET['create'])?creation_intent($_GET['tab']??null):'';
+    header('Location: ../auth/'.($personal?'account.php':'login.php').($intent!==''?'?create='.$intent:''),true,303);
+    exit;
+}
+if(!$personal && !is_admin($account)){
+    http_response_code(403); exit('Administrator access is required.');
 }
 $csrf=token(); session_write_close();
+$title=$personal?'My Challenges':'Control room';
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Control room · BOLTX</title><link rel="icon" type="image/svg+xml" href="../assets/boltx-icon.svg"><link rel="stylesheet" href="../assets/style.css?v=2"><script type="module" src="../assets/admin.js?v=2"></script></head>
-<body class="admin" data-csrf="<?=h($csrf)?>">
-<main><header class="admin-header"><div><img class="brand" src="../assets/boltx-logo.svg" alt="BOLTX"><h1>Control room</h1></div>
+<title><?=h($title)?> · BOLTX</title><link rel="icon" type="image/svg+xml" href="../assets/boltx-icon.svg"><link rel="stylesheet" href="../assets/style.css?v=accounts"><script type="module" src="../assets/admin.js?v=accounts"></script></head>
+<body class="admin<?=$personal?' personal':''?>" data-csrf="<?=h($csrf)?>" data-dashboard="<?=$personal?'mine':'admin'?>">
+<main><header class="admin-header"><div><a href="../"><img class="brand" src="../assets/boltx-logo.svg" alt="BOLTX"></a><h1><?=h($title)?></h1><?php if($personal): ?><p class="muted"><bdi><?=h($account['display_name'])?></bdi></p><?php endif ?></div>
 <nav class="actions" aria-label="Account">
+<?php if($personal): ?>
+<a href="../auth/account.php?mode=settings">Account settings</a>
+<?php if(is_admin($account)): ?><a href="../admin/">Operator control room</a><?php endif ?>
+<?php else: ?><a href="../my/">My Challenges</a><a href="users.php">Users and platform settings</a><?php endif ?>
 <form action="../auth/logout.php" method="post"><input type="hidden" name="csrf" value="<?=h($csrf)?>"><button>Sign out</button></form></nav></header>
-<nav class="tabs" role="tablist" aria-label="Dashboard sections"><button type="button" role="tab" id="tab-wheel" data-tab="wheel" aria-selected="true" aria-controls="panel">Spin Wheel</button><button type="button" role="tab" id="tab-boxes" data-tab="boxes" aria-selected="false" aria-controls="panel">Mystery Boxes</button><button type="button" role="tab" id="tab-settings" data-tab="settings" aria-selected="false" aria-controls="panel">Challenges</button></nav>
+<nav class="tabs" role="tablist" aria-label="Dashboard sections"><button type="button" role="tab" id="tab-settings" data-tab="settings" aria-selected="<?=$personal?'true':'false'?>" aria-controls="panel">All Challenges</button><button type="button" role="tab" id="tab-wheel" data-tab="wheel" aria-selected="<?=$personal?'false':'true'?>" aria-controls="panel"><?=$personal?'My Wheels':'Spin Wheel'?></button><button type="button" role="tab" id="tab-boxes" data-tab="boxes" aria-selected="false" aria-controls="panel"><?=$personal?'My Mystery Boxes':'Mystery Boxes'?></button></nav>
 <p id="admin-status" class="admin-status" role="status"></p><div id="panel" role="tabpanel" aria-labelledby="tab-wheel"></div></main>
 <dialog id="editor" class="admin-editor" aria-labelledby="editor-title">
 <button id="editor-close" class="close" type="button" aria-label="Close">×</button>

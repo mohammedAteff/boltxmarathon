@@ -5,25 +5,38 @@ header('Content-Type: application/json; charset=utf-8');
 try {
     if($_SERVER['REQUEST_METHOD']==='GET') {
         $view=$_GET['view']??'wheel';
-        need(in_array($view,['admin','wheel','boxes'],true),'Unknown view.');
+        need(in_array($view,['admin','mine','share','wheel','boxes'],true),'Unknown view.');
         session_open();
-        if($view==='admin') {
-            if(!isset($_SESSION['admin'])) { http_response_code(401); throw new Rule('Sign in to continue.'); }
+        $dashboard=in_array($view,['admin','mine'],true);
+        if($dashboard || $view==='share'){
+            $account=require_account();
+            if($view==='admin' && !is_admin($account)){http_response_code(403);throw new Rule('Administrator access is required.');}
         }
-        $wheel=number($_GET['wheel']??($view==='wheel'?($_GET['game']??1):1));
-        $event=number($_GET['event']??($view==='boxes'?($_GET['game']??2):2));
-        $scratchPreview=false;
-        if($view!=='admin'){
+        if($view==='share'){
+            $game=authorized_game(number($_GET['game']??null));
+            if(!can_manage($account,$game)){http_response_code(404);throw new Rule('Challenge unavailable.');}
+            $out=['credentials'=>share_credentials($game)];
+            session_write_close();
+        }elseif($dashboard){
+            $wheel=number($_GET['wheel']??0,0);
+            $event=number($_GET['event']??0,0);
+            session_write_close();
+            $out=state('admin',number($_GET['since']??-1,-1,PHP_INT_MAX),$wheel,$event,false,$view==='mine'?$account['id']:null);
+        }else{
+            $wheel=$view==='wheel'?number($_GET['game']??1):0;
+            $event=$view==='boxes'?number($_GET['game']??2):0;
             $game=authorized_game($view==='wheel'?$wheel:$event,$view);
             $scratchPreview=$view==='boxes' && !isset($_GET['display']) && role_for($game)!=='view';
+            session_write_close();
+            $out=state($view,number($_GET['since']??-1,-1,PHP_INT_MAX),$wheel,$event,$scratchPreview);
         }
-        session_write_close();
-        $out=state($view,number($_GET['since']??-1,-1,PHP_INT_MAX),$wheel,$event,$scratchPreview);
     } elseif($_SERVER['REQUEST_METHOD']==='POST') {
         session_open();
         if(!valid_token($_SERVER['HTTP_X_CSRF_TOKEN']??null)) { http_response_code(403); throw new Rule('Refresh the page and try again.'); }
-        if(!isset($_SESSION['admin']) && !empty($_FILES)) { http_response_code(403); throw new Rule('This action belongs in the dashboard.'); }
+        $account=current_account();
         if(!empty($_FILES)) {
+            $game=authorized_game(number($_POST['game']??null),'wheel');
+            if(!can_manage($account,$game)){http_response_code(404);throw new Rule('Challenge unavailable.');}
             $d=$_POST; $file=$_FILES['image']??null;
             need(is_array($file) && $file['error']===UPLOAD_ERR_OK && $file['size']<=4*1024*1024 && is_uploaded_file($file['tmp_name']),'Choose a JPEG, PNG or WebP image under 4 MB.');
             $info=@getimagesize($file['tmp_name']);
@@ -40,18 +53,26 @@ try {
             unset($d['image']);
         }
         $a=label($d['action']??'',32);
-        unset($d['_owner'],$d['_access_version']);
-        $admin=isset($_SESSION['admin']);
-        $source=$admin && ($d['source']??'')!=='presenter'?'dashboard':'presenter';
+        unset($d['_owner'],$d['_account_id'],$d['_auth_version'],$d['_access_version']);
         need($a!=='spin','Open the live wheel to preview and accept a result.');
-        if(!$admin){
-            $kind=str_starts_with($a,'box_')?'boxes':'wheel';
-            $g=authorized_game(number($d['game']??null),$kind);
-            if(role_for($g)!=='play' || !in_array($a,['spin_accept','box_open','box_reveal','checklist','player_turn'],true)){
-                http_response_code(403); throw new Rule('This link is read-only.');
+        if($a==='game_create'){
+            require_account();
+            $manage=true;
+        }else{
+            $g=authorized_game(number($d['game']??null));
+            $manage=can_manage($account,$g);
+            if(!$manage){
+                if(role_for($g)!=='play' || !in_array($a,['spin_accept','box_open','box_reveal','checklist','player_turn'],true)){
+                    http_response_code(403); throw new Rule('This link does not allow that action.');
+                }
+                $d['_access_version']=$g['access_version'];
             }
-            $d['_access_version']=$g['access_version'];
-        }else $d['_owner']=$_SESSION['admin'];
+        }
+        if($manage){
+            $d['_account_id']=$account['id'];
+            $d['_auth_version']=$account['auth_version'];
+        }
+        $source=$manage && ($d['source']??'')!=='presenter'?'dashboard':'presenter';
         session_write_close();
         $extra=null;
         $out=['version'=>action($a,$d,$source,$extra)]+($extra??[]);

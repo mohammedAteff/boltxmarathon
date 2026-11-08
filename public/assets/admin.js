@@ -1,14 +1,15 @@
 import {$,esc,bdi,request,post,appUrl,avatar} from './common.js';
-import {tr} from './locale.js';
+import {tr} from './locale.js?v=accounts';
 
 const root=$('#panel'), status=$('#admin-status'), dialog=$('#editor'), editor=$('#editor-body');
 const url=new URL(location.href);
-const selected={wheel:Number(url.searchParams.get('wheel'))||1,boxes:Number(url.searchParams.get('event'))||2};
-let tab=url.searchParams.has('event')&&!url.searchParams.has('wheel')?'boxes':'wheel';
+const personal=document.body.dataset.dashboard==='mine';
+const selected={wheel:Number(url.searchParams.get('wheel'))||0,boxes:Number(url.searchParams.get('event'))||0};
+let tab=url.searchParams.has('event')&&!url.searchParams.has('wheel')?'boxes':personal&&!url.searchParams.has('wheel')?'settings':'wheel';
 if(['wheel','boxes','settings'].includes(url.searchParams.get('tab'))) tab=url.searchParams.get('tab');
 let state, saving=false, loading, formVersion, pendingPlayer=Number(url.searchParams.get('player'));
 let pendingCreate=url.searchParams.has('create'), pendingShare=url.searchParams.has('share'), overviewKind='all',overviewStatus='all';
-const shares=new Map();
+let issuedShare;
 
 const attrs=data=>Object.entries(data).map(([key,value])=>' data-'+key+'="'+esc(value)+'"').join('');
 const action=(title,name,data={},confirm='',kind='',disabled=false)=>'<button type="button" class="'+kind+'"'+attrs({action:name,...data,...(confirm?{confirm}:{})})+(disabled?' disabled':'')+'>'+esc(title)+'</button>';
@@ -33,6 +34,7 @@ const counts=id=>state.units.filter(u=>u.item_id===id);
 function gameToolbar(){
     const noun=tab==='wheel'?'wheel':'event';
     const options=state.games.filter(g=>g.kind===tab).map(g=>[g.id,g.name]);
+    if(!options.length) return section(tab==='wheel'?'My Wheels':'My Mystery Boxes',empty('Create a challenge to get started.'),edit('New '+noun,'new-game','','primary'));
     return '<section class="panel game-toolbar"><div class="game-picker">'+select(tab==='wheel'?'Selected wheel':'Selected box event','game-picker',selected[tab],options)+
         edit('New '+noun,'new-game','','primary')+edit('Rename','rename-game')+'</div>'+
         row(edit('Game settings','game-settings'),edit('Share','share'),link('Open live game',tab),link('Display only',tab,true))+'</section>';
@@ -43,6 +45,7 @@ function playerCard(p){
         row(!current&&p.active&&!full?action('Set turn','player_turn',{id:p.id}):'',edit('Manage','player',p.id),edit('Items','player-items',p.id))+'</article>';
 }
 function wheel(){
+    if(!selected.wheel) return gameToolbar();
     const current=state.players.find(p=>p.id===state.current);
     const quantities=new Map(state.pool.map(i=>[i.id,i.qty]));
     const assigned=new Map();
@@ -56,6 +59,7 @@ function wheel(){
         activity(e=>e.game_id===selected.wheel&&e.action!=='settings');
 }
 function boxes(){
+    if(!selected.boxes) return gameToolbar();
     const body=state.boxes.map(b=>'<tr><td>#'+b.number+'</td><td>'+bdi((b.icon?b.icon+' ':'')+b.text)+'</td><td><span class="table-state">'+(b.opened_at?'Revealed':'Sealed')+'</span></td><td>'+
         row(b.opened_at?action('Seal','box_close',{id:b.id}):action('Reveal','box_open',{id:b.id}),edit('Edit','box',b.id))+'</td></tr>').join('');
     return gameToolbar()+section('Boxes · '+state.boxes.length,body?table(['Box','Challenge','Status','Actions'],body):empty('Add the first box to this event.'),row(edit('Event controls','box-round'),edit('+ Add box','new-box','','primary')))+
@@ -66,9 +70,10 @@ function activity(filter){
     if(!history.length) return '';
     const entries=history.map(e=>{
         const d=JSON.parse(e.detail);
-        const summary=e.action==='spin'?d.player.name+' → '+d.item.name:d.text||d.name||(d.id?'#'+d.id:'');
+        const isSpin=['spin','spin_accept'].includes(e.action);
+        const summary=isSpin?d.player.name+' → '+d.item.name:d.text||d.name||(d.id?'#'+d.id:'');
         return '<div class="row">'+row('<strong>'+esc(e.action.replaceAll('_',' '))+'</strong>','<time>'+esc(e.created_at)+'</time>',
-            e.action==='spin'&&!e.undone&&e.reversible?action('Undo this spin','undo',{id:e.id},'Reverse this spin and return its exact item?'):'')+
+            isSpin&&!e.undone&&e.reversible?action('Undo this spin','undo',{id:e.id},'Reverse this spin and return its exact item?'):'')+
             (summary?bdi(summary):'')+'</div>';
     }).join('');
     return '<details class="panel activity"><summary>Activity</summary><div class="history">'+entries+'</div></details>';
@@ -77,14 +82,20 @@ function settings(){
     const games=state.games.filter(g=>(overviewKind==='all'||g.kind===overviewKind)&&(overviewStatus==='all'||Boolean(g.archived)===(overviewStatus==='archived')));
     const body=games.map(g=>{
         const param=g.kind==='wheel'?'wheel':'event';
-        return '<tr><td>'+bdi(g.name)+'</td><td>'+(g.kind==='wheel'?'Spin Wheel':'Mystery Boxes')+'</td><td>'+esc(g.created_at.slice(0,10))+'</td><td>'+esc(g.updated_at.slice(0,16))+'</td><td>'+(g.archived?'Archived':'Active')+'</td><td>'+
-            '<a class="dashboard-link" href="?tab='+g.kind+'&amp;'+param+'='+g.id+'">Manage ↗</a>'+
+        const key={game:g.id,kind:g.kind};
+        return '<tr><td>'+bdi(g.name)+'</td><td>'+(g.kind==='wheel'?'Spin Wheel':'Mystery Boxes')+'</td><td>'+esc(g.created_at.slice(0,10))+'</td><td>'+esc(g.updated_at.slice(0,16))+'</td><td>'+(g.archived?'Archived':'Active')+'</td><td class="challenge-actions">'+
+            '<a class="dashboard-link" href="?tab='+g.kind+'&amp;'+param+'='+g.id+'">Edit challenge ↗</a>'+
             '<a class="dashboard-link" href="?tab='+g.kind+'&amp;'+param+'='+g.id+'&amp;share=1">Share ↗</a>'+
-            '<a class="dashboard-link" target="_blank" rel="noopener" href="'+appUrl(g.kind==='wheel'?'wheel.php':'boxes.php')+'?game='+g.id+'">Open ↗</a></td></tr>';
+            '<a class="dashboard-link" target="_blank" rel="noopener" href="'+appUrl(g.kind==='wheel'?'wheel.php':'boxes.php')+'?game='+g.id+'">Open challenge ↗</a>'+
+            row('<button type="button"'+attrs({'share-game':g.id,'share-value':'token'})+'>Copy link</button>',
+                '<button type="button"'+attrs({'share-game':g.id,'share-value':'code'})+'>Copy code</button>',
+                action('Reset',g.kind==='wheel'?'wheel_reset':'box_reset',{...key,mode:'both'},'Reset this challenge’s results and restore items or boxes?'),
+                action('Delete','game_delete',key,'Delete this challenge and revoke its shared links?','danger'))+'</td></tr>';
     }).join('');
     return section('Saved challenges',row(select('Type','overview-kind',overviewKind,[['all','All games'],['wheel','Spin Wheel'],['boxes','Mystery Boxes']]),
         select('Status','overview-status',overviewStatus,[['all','All statuses'],['active','Active'],['archived','Archived']]))+
-        (body?table(['Challenge','Type','Created','Last activity','Status','Actions'],body):empty('No challenges match these filters.')));
+        (body?table(['Challenge','Type','Created','Last activity','Status','Actions'],body):empty('No challenges match these filters.')),
+        row('<a class="dashboard-link" href="?tab=wheel&amp;create=1">New wheel ↗</a>','<a class="dashboard-link" href="?tab=boxes&amp;create=1">New box event ↗</a>'));
 }
 function gameSettings(){
     const s=tab==='wheel'?state.settings:state.box_settings;
@@ -102,10 +113,11 @@ function gameSettings(){
         '<button type="button" data-sound-preview>Preview sound</button>'+
         yes('Fullscreen control','fullscreen',s.fullscreen)+select('Preferred language','language',s.language,[['en','English'],['ar','العربية']]));
 }
+const sharedLink=token=>new URL(appUrl('open.php')+'?token='+token,location.origin).href;
+const getShare=async id=>(await request(appUrl('api.php')+'?view=share&game='+id)).credentials;
 function shareResult(s){
-    const link=token=>new URL(appUrl('open.php')+'?token='+token,location.origin).href;
-    return '<p>Save these credentials now. Generating new credentials revokes the previous ones.</p>'+
-        [['Access code',s.code],['Private link',link(s.token)],['Read-only display link',link(s.display)]].map(([title,value])=>
+    return '<p>Generating new credentials revokes the previous ones.</p>'+
+        [['Access code',s.code],['Private link',sharedLink(s.token)],['Read-only display link',sharedLink(s.display)]].map(([title,value])=>
             '<label>'+title+'<input readonly dir="ltr" data-user-text value="'+esc(value)+'"></label>'+
             '<button type="button" data-copy="'+esc(value)+'">Copy</button>').join('');
 }
@@ -164,7 +176,7 @@ function openEditor(kind,id,created=false){
         const g=currentGame();
         title=created?'Challenge Created!':'Share challenge';
         body=(created?'<p>'+bdi(g.name)+' · <span>'+(tab==='wheel'?'Spin Wheel':'Mystery Boxes')+'</span></p>':'')+
-            (shares.has(g.id)?shareResult(shares.get(g.id)):'<p>Generate a private code and links for this challenge.</p>')+
+            '<div id="share-values">'+(issuedShare?.game===g.id?shareResult(issuedShare):'<p>Loading shared links…</p>')+'</div>'+
             (created?row(link('Open challenge',tab),'<button type="button" data-manage-created>Manage challenge</button>'):'')+
             (!g.archived?form('game_share','<input type="hidden" name="kind" value="'+tab+'">'+select('Sharing permission','role',g.share_role,[['view','View only'],['play','Allow gameplay']])+expires(),'',g.shared?'Rotate code and links':'Generate code and links'):'')+
             row(g.shared?action('Revoke links','game_share',{kind:tab,revoke:1},'Revoke the existing code, links, and guest sessions?','danger'):'',
@@ -196,6 +208,13 @@ function openEditor(kind,id,created=false){
     editor.innerHTML=body;
     formVersion=state.version;
     dialog.showModal();
+    if(kind==='share'){
+        const slot=$('#share-values',editor), game=selected[tab], issued=issuedShare;
+        issuedShare=null;
+        if(issued?.game!==game) getShare(game).then(credentials=>{
+            if(slot.isConnected) slot.innerHTML=credentials?shareResult(credentials):'<p>Generate a private code and links for this challenge.</p>';
+        }).catch(e=>{if(slot.isConnected) slot.textContent=e.message;});
+    }
 }
 function render(){
     if(!state) return;
@@ -216,7 +235,7 @@ function render(){
         pendingCreate=false; url.searchParams.delete('create'); history.replaceState(null,'',url);
         openEditor('new-game',0);
     }
-    if(pendingShare&&tab!=='settings'){
+    if(pendingShare&&tab!=='settings'&&selected[tab]&&!dialog.open){
         pendingShare=false; url.searchParams.delete('share'); history.replaceState(null,'',url);
         openEditor('share',0);
     }
@@ -227,14 +246,14 @@ async function refresh(force=false){
         return;
     }
     if(!force&&(saving||dialog.open||root.contains(document.activeElement))) return;
-    const query=new URLSearchParams({view:'admin',wheel:selected.wheel,event:selected.boxes,since:force?-1:state?.version??-1});
+    const query=new URLSearchParams({view:personal?'mine':'admin',wheel:selected.wheel,event:selected.boxes,since:force?-1:state?.version??-1});
     let done;
     loading=new Promise(resolve=>{done=resolve;});
     try{
         const next=await request(appUrl('api.php')+'?'+query);
         if(Number(query.get('wheel'))!==selected.wheel||Number(query.get('event'))!==selected.boxes) return;
         if(!force&&(saving||dialog.open||root.contains(document.activeElement))) return;
-        if(next.settings){state=next; render();}
+        if(next.settings){state=next; Object.assign(selected,next.selected); render();}
     }catch(e){status.textContent=e.message;}
     finally{loading=null;done();}
 }
@@ -248,7 +267,7 @@ async function save(data,fromDialog=false){
     if(saving||!state) return;
     saving=true;
     const version=fromDialog?formVersion:state.version;
-    const game=tab==='settings'?1:selected[tab];
+    const game=data instanceof FormData?selected[tab]:Number(data.game)||(tab==='settings'?0:selected[tab]);
     const error=fromDialog?$('#editor-error'):status;
     root.inert=true;
     editor.inert=true;
@@ -256,10 +275,13 @@ async function save(data,fromDialog=false){
     error.textContent=fromDialog?'':'Saving…';
     try{
         if(data instanceof FormData){data.set('version',version); data.set('game',game);}
-        else Object.assign(data,{version,game});
+        else Object.assign(data,{version,...(game?{game}:{})});
         const result=await post(data);
-        if(result.game){selected[tab]=result.game; storeSelection();shares.set(result.game,result);}
-        if(!(data instanceof FormData)&&['game_archive','game_share'].includes(data.action)&&!result.game) shares.delete(game);
+        if(result.game){selected[tab]=result.game; storeSelection();issuedShare=result;}
+        if(data.action==='game_delete'){
+            for(const kind of ['wheel','boxes']) if(selected[kind]===game) selected[kind]=0;
+            storeSelection();
+        }
         if(dialog.open) dialog.close();
         await refresh(true);
         status.textContent='Saved.';
@@ -305,6 +327,16 @@ function submit(e){
     save(f.dataset.form==='avatar'?data:{action:f.dataset.form,...Object.fromEntries(data)},dialog.open);
 }
 root.addEventListener('click',click);
+root.addEventListener('click',async e=>{
+    const copy=e.target.closest('[data-share-game]');
+    if(!copy) return;
+    try{
+        const s=await getShare(Number(copy.dataset.shareGame));
+        if(!s){status.textContent='Open Share to generate copyable credentials.';return;}
+        await navigator.clipboard.writeText(copy.dataset.shareValue==='code'?s.code:sharedLink(s.token));
+        status.textContent='Copied';
+    }catch(e){status.textContent=e.message;}
+});
 editor.addEventListener('click',click);
 editor.addEventListener('click',async e=>{
     if(e.target.closest('[data-manage-created]')) dialog.close();

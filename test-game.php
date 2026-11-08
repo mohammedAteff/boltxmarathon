@@ -5,7 +5,11 @@ if(PHP_SAPI!=='cli' || !preg_match('/(?:^|;)dbname=[a-zA-Z0-9_]+_test(?:;|$)/',g
     fwrite(STDERR,"Use a fresh database whose name ends in _test.\n"); exit(1);
 }
 function check(bool $ok,string $msg): void { if(!$ok) throw new RuntimeException($msg); }
-function change(string $a,array $d=[]): int { return action($a,$d,'dashboard'); }
+function test_actor(): array {
+    $admin=one("SELECT id,auth_version FROM user_accounts WHERE role='admin' ORDER BY id LIMIT 1");
+    return ['_account_id'=>$admin['id'],'_auth_version'=>$admin['auth_version']];
+}
+function change(string $a,array $d=[]): int { return action($a,$d+test_actor(),'dashboard'); }
 function reject(string $a,array $d=[],string $msg=''): void {
     try { change($a,$d); }
     catch(Rule $e) { check(str_contains($e->getMessage(),$msg),'Unexpected rejection: '.$e->getMessage()); return; }
@@ -93,7 +97,7 @@ change('box_clear');
 check(count(state('boxes',-1,1,$otherEvent)['boxes'])===1,'Clearing one event preserves the other');
 
 $share=null;
-action('game_create',['kind'=>'wheel','name'=>'V2 preview','role'=>'play','initial_players'=>"ليلى\nGuest",'initial_items'=>"فراولة\nTell a joke"],'dashboard',$share);
+action('game_create',['kind'=>'wheel','name'=>'V2 preview','role'=>'play','initial_players'=>"ليلى\nGuest",'initial_items'=>"فراولة\nTell a joke"]+test_actor(),'dashboard',$share);
 $g=$share['game'];
 $w=state('wheel',-1,$g);
 $accept=['game'=>$g,'version'=>$w['version'],'item_id'=>$w['pool'][1]['id'],'player_id'=>$w['current'],'angle'=>180,'request_id'=>str_repeat('1',32)];
