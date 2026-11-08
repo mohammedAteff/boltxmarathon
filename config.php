@@ -44,7 +44,7 @@ function security(bool $google=false): void {
     header('Cache-Control: no-store');
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
-    header('Referrer-Policy: no-referrer');
+    header('Referrer-Policy: '.($google?'strict-origin-when-cross-origin':'no-referrer'));
     header('X-Robots-Tag: noindex, nofollow');
     $gis=$google?' https://accounts.google.com/gsi/':'';
     header("Content-Security-Policy: default-src 'self'; script-src 'self'$gis; style-src 'self' 'unsafe-inline'$gis; connect-src 'self'$gis; frame-src 'self'$gis; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");

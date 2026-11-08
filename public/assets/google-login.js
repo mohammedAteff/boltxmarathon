@@ -15,7 +15,12 @@ function renderGoogle(){
             form.requestSubmit();
         }
     });
-    gis.renderButton(slot,{type:'standard',theme:'outline',size:'large',text:'continue_with',shape:'rectangular',locale:document.documentElement.lang});
+    function button(){
+        slot.replaceChildren();
+        gis.renderButton(slot,{type:'standard',theme:'outline',size:'large',text:'continue_with',shape:'rectangular',locale:document.documentElement.lang});
+    }
+    button();
+    new MutationObserver(button).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
 }
 if(document.readyState==='complete') renderGoogle();
 else window.addEventListener('load',renderGoogle,{once:true});
