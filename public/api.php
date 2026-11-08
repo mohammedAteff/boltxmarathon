@@ -6,19 +6,23 @@ try {
     if($_SERVER['REQUEST_METHOD']==='GET') {
         $view=$_GET['view']??'wheel';
         need(in_array($view,['admin','wheel','boxes'],true),'Unknown view.');
+        session_open();
         if($view==='admin') {
-            session_open();
             if(!isset($_SESSION['admin'])) { http_response_code(401); throw new Rule('Sign in to continue.'); }
-            session_write_close();
         }
         $wheel=number($_GET['wheel']??($view==='wheel'?($_GET['game']??1):1));
         $event=number($_GET['event']??($view==='boxes'?($_GET['game']??2):2));
-        $out=state($view,number($_GET['since']??-1,-1,PHP_INT_MAX),$wheel,$event);
+        $scratchPreview=false;
+        if($view!=='admin'){
+            $game=authorized_game($view==='wheel'?$wheel:$event,$view);
+            $scratchPreview=$view==='boxes' && !isset($_GET['display']) && role_for($game)!=='view';
+        }
+        session_write_close();
+        $out=state($view,number($_GET['since']??-1,-1,PHP_INT_MAX),$wheel,$event,$scratchPreview);
     } elseif($_SERVER['REQUEST_METHOD']==='POST') {
         session_open();
-        if(!isset($_SESSION['admin'])) { http_response_code(401); throw new Rule('Sign in to operate the games.'); }
         if(!valid_token($_SERVER['HTTP_X_CSRF_TOKEN']??null)) { http_response_code(403); throw new Rule('Refresh the page and try again.'); }
-        session_write_close();
+        if(!isset($_SESSION['admin']) && !empty($_FILES)) { http_response_code(403); throw new Rule('This action belongs in the dashboard.'); }
         if(!empty($_FILES)) {
             $d=$_POST; $file=$_FILES['image']??null;
             need(is_array($file) && $file['error']===UPLOAD_ERR_OK && $file['size']<=4*1024*1024 && is_uploaded_file($file['tmp_name']),'Choose a JPEG, PNG or WebP image under 4 MB.');
@@ -36,10 +40,21 @@ try {
             unset($d['image']);
         }
         $a=label($d['action']??'',32);
-        $source=($d['source']??'')==='presenter'?'presenter':'dashboard';
-        if($source==='presenter') need(in_array($a,['spin','undo','box_open','player_turn'],true) || ($a==='unit' && ($d['mode']??'')==='return'),'This action belongs in the dashboard.');
-        $out=['version'=>action($a,$d,$source)];
-        if($a==='game_create') $out['game']=one('SELECT game_id FROM events WHERE id=?',[$out['version']])['game_id'];
+        unset($d['_owner'],$d['_access_version']);
+        $admin=isset($_SESSION['admin']);
+        $source=$admin && ($d['source']??'')!=='presenter'?'dashboard':'presenter';
+        need($a!=='spin','Open the live wheel to preview and accept a result.');
+        if(!$admin){
+            $kind=str_starts_with($a,'box_')?'boxes':'wheel';
+            $g=authorized_game(number($d['game']??null),$kind);
+            if(role_for($g)!=='play' || !in_array($a,['spin_accept','box_open','box_reveal','checklist','player_turn'],true)){
+                http_response_code(403); throw new Rule('This link is read-only.');
+            }
+            $d['_access_version']=$g['access_version'];
+        }else $d['_owner']=$_SESSION['admin'];
+        session_write_close();
+        $extra=null;
+        $out=['version'=>action($a,$d,$source,$extra)]+($extra??[]);
     } else { http_response_code(405); throw new Rule('Method not allowed.'); }
     echo json_encode($out,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE);
 } catch(Rule|JsonException $e) {

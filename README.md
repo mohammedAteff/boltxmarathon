@@ -1,6 +1,6 @@
 # BOLTX Challenge Games
 
-Two live games and a private control room. The game pages are public displays; a signed-in operator can use the same pages to play.
+Private Spin Wheel and Mystery Boxes challenges, with an authenticated control room and scoped play and display links.
 
 ## Run locally
 
@@ -20,7 +20,7 @@ Two live games and a private control room. The game pages are public displays; a
    (Read-Host 'Operator password' -MaskInput) | php setup-admin.php operator
    ```
 
-5. Run `php -S 127.0.0.1:8017 -t public`. Open [the launcher](http://127.0.0.1:8017/) or [the control room](http://127.0.0.1:8017/admin/).
+5. Run `php migrate-v2.php` and then `php -S 127.0.0.1:8017 -t public`. Open [the launcher](http://127.0.0.1:8017/) or [the control room](http://127.0.0.1:8017/admin/).
 
 For hosted use, configure the web server document root to the project's **public/** directory, run PHP over HTTPS, and set the database variables in the PHP service environment. Keep the schema, setup script, tests and configuration outside the web root. Back up the database; it contains the live state, event history, and re-encoded avatar images.
 
@@ -45,12 +45,16 @@ printf '%s\n' "$boltx_password" | php setup-admin.php admin
 unset boltx_password
 ```
 
+For an existing multi-game install, back up the database and run `php migrate-v2.php` before serving the upgraded code. The migration can run again safely. Existing wheels, boxes, and results retain their IDs. In the dashboard, use **Share** to issue credentials for an existing challenge.
+
 Before using the deployment, check that `/boltxmarathon/schema.sql` returns 404 and that the game pages and dashboard load over HTTPS.
 
 ## Run a stream
 
 - Sign in to **Control room**. In **Spin Wheel**, add players and wheel units, and use **Make current** to pick an eligible player. Leave a player's limit blank to inherit the default. Enter **0** for unlimited. A spin awards one unit and advances to the next player with room.
-- Use **Operate wheel** to spin from the game itself. The × beside an assigned item returns it to the wheel. The control room also supports removing an assignment without returning it, copying it while keeping the original, and restoring an earlier result when its exact unit is still intact.
+- Open the live wheel to drag, flick, tap, or hold **SPIN**. Confirm a proposed result with **Accept & assign**, or choose **Spin again** to keep the player and inventory as they are. Use **View your list** to check off assignments, print to PDF, or download a UTF-8 CSV.
+- Use **Share** to issue a private code, a configurable play or view link, and a separate read-only OBS link. Save these credentials when generated. The server keeps their hashes. Rotation or archiving invalidates old links and guest sessions.
+- Each game has its own **Game settings**. For Mystery Boxes, choose **Shake & pop** or **Key unlock** and optionally enable scratch paper. The reveal button in the scratch popup is the keyboard-accessible alternative.
 - In **Mystery Boxes**, adding a challenge creates a box. You can assign the same challenge to additional boxes, swap box numbers, and shuffle sealed boxes. Use **Open on stream** to animate a reveal or **Mark revealed** for an immediate update. Click any revealed crate to enlarge its paper.
 - Use **Wheel display** or **Box display** in OBS. Their URLs end in `?display`; they stay read-only even in a browser with an active operator session. A display receives changes automatically. Game sound, when enabled, requires a gesture in that browser; no ambient track was supplied.
 - **Seal all boxes** keeps the challenges. **Reset collections** returns assigned units to the wheel. **Clear all collections** moves assigned units into the removed inventory instead. **Reset wheel and collections** restores both assigned and removed units.
@@ -61,4 +65,4 @@ The supplied reference is used for the layout and art direction. The wheel, bolt
 
 ## Verification
 
-Import `schema.sql` into a separate empty database ending in `_test`, set `BOLTX_DSN` to point there, then run `php test-game.php`. It exercises real database transactions, capacity and turn order, duplicate item names, unit transfers, undo conflicts, state versions, Arabic text, box state changes and independent resets. Use a fresh schema for every run. The application needs no build step or third-party runtime packages.
+Import `schema.sql` into a separate empty database ending in `_test`, set `BOLTX_DSN` to point there, then run `php migrate-v2.php` and `php test-game.php`. Use a fresh schema for every run.

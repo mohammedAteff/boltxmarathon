@@ -1,15 +1,21 @@
 <?php
-require __DIR__.'/config.php'; security(); session_open();
-$operator=isset($_SESSION['admin']) && !isset($_GET['display']);
-$csrf=$operator?token():''; session_write_close();
+require __DIR__.'/access.php'; security(); session_open();
 $wheel=$view==='wheel';
 $game=filter_var($_GET['game']??($wheel?1:2),FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>2147483647]]);
-if($game===false) { http_response_code(404); exit('Game not found.'); }
+try{
+    need($game!==false,'Challenge unavailable.');
+    $challenge=authorized_game($game,$view);
+}catch(Rule){
+    header('Location: open.php?kind='.$view,true,303); exit;
+}
+$role=isset($_GET['display']) || $challenge['archived']?'view':role_for($challenge);
+$operator=$role!=='view';
+$csrf=$operator?token():''; session_write_close();
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BOLTX <?= $wheel?'Spin Wheel':'Mystery Boxes' ?></title><link rel="icon" type="image/svg+xml" href="assets/boltx-icon.svg"><link rel="stylesheet" href="assets/style.css?v=game-sets">
 <script type="module" src="assets/stage.js?v=game-sets"></script></head>
-<body class="stage <?=$view?>" data-view="<?=$view?>" data-game="<?=$game?>" data-csrf="<?=h($csrf)?>">
+<body class="stage <?=$view?>" data-view="<?=$view?>" data-game="<?=$game?>" data-role="<?=$role?>" data-csrf="<?=h($csrf)?>" data-language="<?=h(json_decode($challenge['options']??'{}',true)['language']??'en')?>">
 <div class="arena-decor" aria-hidden="true">
 <i></i><i></i><span class="scenery scenery-left"></span><span class="scenery scenery-right"></span>
 <span class="arena-art arena-art-left"></span><span class="arena-art arena-art-right"></span><span class="arena-sparks"></span>
@@ -17,7 +23,7 @@ if($game===false) { http_response_code(404); exit('Game not found.'); }
 <main class="stage-main">
 <header class="hero">
 <a href="./" aria-label="BOLTX home"><img class="brand" src="assets/boltx-logo.svg" alt="BOLTX"></a>
-<h1 class="display"><small>BOLTX</small><?= $wheel?'SPIN <em>WHEEL</em>':'MYSTERY <em>BOXES</em>' ?></h1>
+<h1 class="display"><small>BOLTX</small><?= $wheel?'<span data-ar="عجلة">SPIN</span> <em>WHEEL</em>':'<span data-ar="الصناديق">MYSTERY</span> <em data-ar="الغامضة">BOXES</em>' ?></h1>
 <p class="eyebrow" id="game-name"><?= $wheel?'RANDOM CHALLENGE':'OPEN · REVEAL · CHALLENGE' ?></p>
 <div class="counter" id="counter" aria-label="Game counters"></div>
 </header>
@@ -35,7 +41,7 @@ if($game===false) { http_response_code(404); exit('Game not found.'); }
 </svg>
 </div>
 <div class="spin-wrap">
-<button id="undo" class="undo" type="button" <?=$operator?'':'hidden'?>>↶ &nbsp; UNDO LAST SPIN</button>
+<button id="undo" class="undo" type="button" <?=$role==='admin'?'':'hidden'?>>↶ &nbsp; UNDO LAST SPIN</button>
 <button id="spin" class="spin" type="button" disabled aria-label="Spin wheel">
 <svg viewBox="58 50 224 254" aria-hidden="true">
 <defs><linearGradient id="spinfill" x2=".78" y2="1"><stop stop-color="#a533ff"/><stop offset=".55" stop-color="#740ce0"/><stop offset="1" stop-color="#623d9a"/></linearGradient></defs>
@@ -43,7 +49,9 @@ if($game===false) { http_response_code(404); exit('Game not found.'); }
 <path fill="#d99dff" opacity=".18" d="M65 168 194 153 239 174Q257 182 250 199Q248 204 242 209L87 297 150 206Z"/>
 <text x="168" y="191" text-anchor="middle">SPIN</text>
 </svg>
-</button></div>
+</button>
+<a class="quiet view-list" href="list.php?game=<?=$game?><?=isset($_GET['display'])?'&amp;display=1':''?>">View your list</a>
+</div>
 </div>
 <aside id="players-right" class="players players-right" aria-label="More players"></aside>
 </div>

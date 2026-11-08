@@ -1,11 +1,14 @@
 import {$,esc,bdi,request,post,appUrl,avatar} from './common.js';
+import {tr} from './locale.js';
 
 const root=$('#panel'), status=$('#admin-status'), dialog=$('#editor'), editor=$('#editor-body');
 const url=new URL(location.href);
 const selected={wheel:Number(url.searchParams.get('wheel'))||1,boxes:Number(url.searchParams.get('event'))||2};
 let tab=url.searchParams.has('event')&&!url.searchParams.has('wheel')?'boxes':'wheel';
 if(['wheel','boxes','settings'].includes(url.searchParams.get('tab'))) tab=url.searchParams.get('tab');
-let state, saving=false, loading, formVersion, settingsDirty=false, pendingPlayer=Number(url.searchParams.get('player'));
+let state, saving=false, loading, formVersion, pendingPlayer=Number(url.searchParams.get('player'));
+let pendingCreate=url.searchParams.has('create'), pendingShare=url.searchParams.has('share'), overviewKind='all',overviewStatus='all';
+const shares=new Map();
 
 const attrs=data=>Object.entries(data).map(([key,value])=>' data-'+key+'="'+esc(value)+'"').join('');
 const action=(title,name,data={},confirm='',kind='',disabled=false)=>'<button type="button" class="'+kind+'"'+attrs({action:name,...data,...(confirm?{confirm}:{})})+(disabled?' disabled':'')+'>'+esc(title)+'</button>';
@@ -13,8 +16,10 @@ const edit=(title,editor,id='',kind='')=>'<button type="button" class="'+kind+'"
 const input=(title,name,value='',{type='text',min=0,max=120,optional=false}={})=>
     '<label>'+esc(title)+'<input name="'+name+'" value="'+esc(value??'')+'" type="'+type+'" '+(type==='number'?'min="'+min+'" max="'+max+'"':'maxlength="'+max+'" dir="auto"')+(optional?'':' required')+'></label>';
 const num=(title,name,value,max,min=0,optional=false)=>input(title,name,value,{type:'number',min,max,optional});
+const initial=(title,name)=>'<label>'+title+'<textarea name="'+name+'" dir="auto" rows="3" maxlength="12000"></textarea></label>';
 const select=(title,name,value,options)=>'<label>'+esc(title)+'<select name="'+name+'">'+options.map(([id,text])=>'<option value="'+esc(id)+'" '+(String(id)===String(value??'')?'selected':'')+'>'+esc(text)+'</option>').join('')+'</select></label>';
 const yes=(title,name,value,on='On',off='Off')=>select(title,name,value,[[1,on],[0,off]]);
+const expires=()=>select('Access expires','expires_days',0,[[0,'Never'],[1,'After one day'],[7,'After one week'],[30,'After 30 days']]);
 const row=(...items)=>'<div class="actions">'+items.join('')+'</div>';
 const form=(name,body,id='',submit='Save')=>'<form class="editor-form" data-form="'+name+'">'+(id?'<input type="hidden" name="id" value="'+id+'">':'')+body+'<div class="form-end"><button class="primary">'+esc(submit)+'</button></div></form>';
 const section=(title,body,buttons='')=>'<section class="panel"><div class="section-heading"><h2>'+esc(title)+'</h2>'+buttons+'</div>'+body+'</section>';
@@ -30,7 +35,7 @@ function gameToolbar(){
     const options=state.games.filter(g=>g.kind===tab).map(g=>[g.id,g.name]);
     return '<section class="panel game-toolbar"><div class="game-picker">'+select(tab==='wheel'?'Selected wheel':'Selected box event','game-picker',selected[tab],options)+
         edit('New '+noun,'new-game','','primary')+edit('Rename','rename-game')+'</div>'+
-        row(link('Open live game',tab),link('Display only',tab,true))+'</section>';
+        row(edit('Game settings','game-settings'),edit('Share','share'),link('Open live game',tab),link('Display only',tab,true))+'</section>';
 }
 function playerCard(p){
     const current=p.id===state.current, full=p.max>0&&p.items.length>=p.max;
@@ -45,7 +50,7 @@ function wheel(){
     const items=state.items.map(i=>'<tr><td>'+bdi((i.icon?i.icon+' ':'')+i.name)+'</td><td>'+ (quantities.get(i.id)||0)+'</td><td>'+(assigned.get(i.id)||0)+'</td><td>'+edit('Edit','item',i.id)+'</td></tr>').join('');
     return gameToolbar()+
         section('Live wheel','<p class="muted">'+(current?'Current turn: '+bdi(current.name):'No eligible player')+' · '+state.remaining+' available'+(state.last?' · Last result: '+bdi(state.last.item.name):'')+'</p>',
-            row(action('Spin','spin',{},'','primary',!current||!state.remaining),action('Undo spin','undo',{},'Reverse the latest spin and return its item?','',!state.last),edit('Round controls','wheel-round')))+
+            row(link('Spin on live wheel','wheel'),'<a class="dashboard-link" href="'+appUrl('list.php')+'?game='+selected.wheel+'" target="_blank" rel="noopener">View your list ↗</a>',action('Undo spin','undo',{},'Reverse the latest spin and return its item?','',!state.last),edit('Round controls','wheel-round')))+
         section('Wheel items',items?table(['Item','Available','Assigned','Actions'],items):empty('Add the first item to this wheel.'),edit('+ Add item','new-item','','primary'))+
         section('Players',state.players.length?'<div class="operator-grid">'+state.players.map(playerCard).join('')+'</div>':empty('Add players to enable spins and show their cards on the live wheel.'),edit('+ Add player','new-player','','primary'))+
         activity(e=>e.game_id===selected.wheel&&e.action!=='settings');
@@ -69,12 +74,40 @@ function activity(filter){
     return '<details class="panel activity"><summary>Activity</summary><div class="history">'+entries+'</div></details>';
 }
 function settings(){
-    const s=state.settings;
-    return section('Game settings',form('settings',num('Default player limit (0 = unlimited)','default_limit',s.default_limit,500)+
-        num('Spin duration (ms)','spin_ms',s.spin_ms,12000,500)+num('Result popup duration (ms)','result_ms',s.result_ms,60000)+
-        num('Box opening duration (ms)','box_ms',s.box_ms,8000,150)+num('Effects (0–100)','intensity',s.intensity,100)+
-        yes('Animation','motion',s.motion)+yes('Sound','sound',s.sound)+yes('Fullscreen control','fullscreen',s.fullscreen))+
-        '<p class="muted">These settings apply to all games. Set the result duration to 0 to keep popups open until dismissed.</p>');
+    const games=state.games.filter(g=>(overviewKind==='all'||g.kind===overviewKind)&&(overviewStatus==='all'||Boolean(g.archived)===(overviewStatus==='archived')));
+    const body=games.map(g=>{
+        const param=g.kind==='wheel'?'wheel':'event';
+        return '<tr><td>'+bdi(g.name)+'</td><td>'+(g.kind==='wheel'?'Spin Wheel':'Mystery Boxes')+'</td><td>'+esc(g.created_at.slice(0,10))+'</td><td>'+esc(g.updated_at.slice(0,16))+'</td><td>'+(g.archived?'Archived':'Active')+'</td><td>'+
+            '<a class="dashboard-link" href="?tab='+g.kind+'&amp;'+param+'='+g.id+'">Manage ↗</a>'+
+            '<a class="dashboard-link" href="?tab='+g.kind+'&amp;'+param+'='+g.id+'&amp;share=1">Share ↗</a>'+
+            '<a class="dashboard-link" target="_blank" rel="noopener" href="'+appUrl(g.kind==='wheel'?'wheel.php':'boxes.php')+'?game='+g.id+'">Open ↗</a></td></tr>';
+    }).join('');
+    return section('Saved challenges',row(select('Type','overview-kind',overviewKind,[['all','All games'],['wheel','Spin Wheel'],['boxes','Mystery Boxes']]),
+        select('Status','overview-status',overviewStatus,[['all','All statuses'],['active','Active'],['archived','Archived']]))+
+        (body?table(['Challenge','Type','Created','Last activity','Status','Actions'],body):empty('No challenges match these filters.')));
+}
+function gameSettings(){
+    const s=tab==='wheel'?state.settings:state.box_settings;
+    const wheelFields=num('Default player limit (0 = unlimited)','default_limit',s.default_limit,500)+
+        num('Spin duration (ms)','spin_ms',s.spin_ms,12000,500)+
+        input('Friction (0.35–4)','friction',s.friction)+input('Drag sensitivity (0.4–2)','drag_sensitivity',s.drag_sensitivity)+
+        num('Click momentum','impulse',s.impulse,1200,100)+num('Maximum speed','max_speed',s.max_speed,3200,360)+
+        yes('Automatic turns','auto_turn',s.auto_turn)+select('Accept results','accept_mode',s.accept_mode,[['confirm','Confirm each result'],['automatic','Assign automatically']]);
+    const boxFields=num('Box opening duration (ms)','box_ms',s.box_ms,8000,150)+
+        select('Opening animation','opening_mode',s.opening_mode,[['shake','Shake & pop'],['key','Key unlock']])+
+        yes('Scratch to reveal','scratch',s.scratch)+num('Scratch threshold (%)','scratch_threshold',s.scratch_threshold,90,20);
+    return form('settings','<input type="hidden" name="kind" value="'+tab+'">'+(tab==='wheel'?wheelFields:boxFields)+
+        num('Result popup duration (ms)','result_ms',s.result_ms,60000)+num('Effects (0–100)','intensity',s.intensity,100)+
+        yes('Animation','motion',s.motion)+yes('Sound','sound',s.sound)+num('Sound volume (%)','volume',s.volume,100)+
+        '<button type="button" data-sound-preview>Preview sound</button>'+
+        yes('Fullscreen control','fullscreen',s.fullscreen)+select('Preferred language','language',s.language,[['en','English'],['ar','العربية']]));
+}
+function shareResult(s){
+    const link=token=>new URL(appUrl('open.php')+'?token='+token,location.origin).href;
+    return '<p>Save these credentials now. Generating new credentials revokes the previous ones.</p>'+
+        [['Access code',s.code],['Private link',link(s.token)],['Read-only display link',link(s.display)]].map(([title,value])=>
+            '<label>'+title+'<input readonly dir="ltr" data-user-text value="'+esc(value)+'"></label>'+
+            '<button type="button" data-copy="'+esc(value)+'">Copy</button>').join('');
 }
 function playerForm(p={}){
     const next=Math.max(0,...state.players.map(p=>p.position))+1;
@@ -106,16 +139,36 @@ function boxForm(b={}){
         (b.id&&state.challenges.length>1?'<details><summary>Use an existing challenge</summary>'+
             form('box_save','<input type="hidden" name="number" value="'+b.number+'">'+
                 select('Challenge','challenge_id',b.challenge_id,state.challenges.map(c=>[c.id,c.text.slice(0,90)])),b.id,'Assign challenge')+'</details>':'')+
-        (b.id?row(!b.opened_at?action('Mark revealed quietly','box_mark',{id:b.id}):'',action('Remove box','box_delete',{id:b.id},'Remove this box from the event?','danger')):'');
+        (b.id?row(!b.opened_at||b.scratch_pending?action('Mark revealed quietly','box_mark',{id:b.id}):'',
+            b.opened_at?action('Restart scratch layer','box_scratch_reset',{id:b.id}):'',action('Remove box','box_delete',{id:b.id},'Remove this box from the event?','danger')):'');
 }
-function openEditor(kind,id){
+function openEditor(kind,id,created=false){
     const p=state.players.find(p=>p.id===id), i=state.items.find(i=>i.id===id), b=state.boxes.find(b=>b.id===id);
     let title, body;
     if(kind==='new-game'||kind==='rename-game'){
         const noun=tab==='wheel'?'wheel':'box event', creating=kind==='new-game';
         title=(creating?'New ':'Rename ')+noun;
         body=form(creating?'game_create':'game_rename','<input type="hidden" name="kind" value="'+tab+'">'+
-            input('Name','name',creating?'':currentGame().name,{max:100}),'',creating?'Create '+noun:'Save name');
+            input('Name','name',creating?'':currentGame().name,{max:100})+
+            (creating?select('Sharing permission','role','view',[['view','View only'],['play','Allow gameplay']])+expires()+
+            select('Preferred language','language','en',[['en','English'],['ar','العربية']])+
+            '<details><summary>Initial setup (optional)</summary>'+
+            (tab==='wheel'?initial('Players, one per line','initial_players')+initial('Items, one per line','initial_items')+
+                num('Default player limit (0 = unlimited)','default_limit',5,500):
+                initial('Box challenges, one per line','initial_boxes')+
+                select('Opening animation','opening_mode','shake',[['shake','Shake & pop'],['key','Key unlock']])+yes('Scratch to reveal','scratch',0))+
+            '</details>':''),'',creating?'Create '+noun:'Save name');
+    }else if(kind==='game-settings'){
+        title='Game settings'; body=gameSettings();
+    }else if(kind==='share'){
+        const g=currentGame();
+        title=created?'Challenge Created!':'Share challenge';
+        body=(created?'<p>'+bdi(g.name)+' · <span>'+(tab==='wheel'?'Spin Wheel':'Mystery Boxes')+'</span></p>':'')+
+            (shares.has(g.id)?shareResult(shares.get(g.id)):'<p>Generate a private code and links for this challenge.</p>')+
+            (created?row(link('Open challenge',tab),'<button type="button" data-manage-created>Manage challenge</button>'):'')+
+            (!g.archived?form('game_share','<input type="hidden" name="kind" value="'+tab+'">'+select('Sharing permission','role',g.share_role,[['view','View only'],['play','Allow gameplay']])+expires(),'',g.shared?'Rotate code and links':'Generate code and links'):'')+
+            row(g.shared?action('Revoke links','game_share',{kind:tab,revoke:1},'Revoke the existing code, links, and guest sessions?','danger'):'',
+                action(g.archived?'Restore challenge':'Archive challenge','game_archive',{kind:tab,archived:g.archived?0:1},g.archived?'Restore this challenge?':'Archive this challenge and revoke guest access?'));
     }else if(kind==='new-item'||kind==='item'){
         title=i?'Edit item':'Add item'; body=itemForm(i);
     }else if(kind==='new-box'||kind==='box'){
@@ -159,20 +212,28 @@ function render(){
         history.replaceState(null,'',url);
         if(tab==='wheel'&&state.players.some(p=>p.id===id)) openEditor('player',id);
     }
+    if(pendingCreate&&tab!=='settings'){
+        pendingCreate=false; url.searchParams.delete('create'); history.replaceState(null,'',url);
+        openEditor('new-game',0);
+    }
+    if(pendingShare&&tab!=='settings'){
+        pendingShare=false; url.searchParams.delete('share'); history.replaceState(null,'',url);
+        openEditor('share',0);
+    }
 }
 async function refresh(force=false){
     if(loading){
         if(force){await loading; return refresh(true);}
         return;
     }
-    if(!force&&(saving||settingsDirty||dialog.open||root.contains(document.activeElement))) return;
+    if(!force&&(saving||dialog.open||root.contains(document.activeElement))) return;
     const query=new URLSearchParams({view:'admin',wheel:selected.wheel,event:selected.boxes,since:force?-1:state?.version??-1});
     let done;
     loading=new Promise(resolve=>{done=resolve;});
     try{
         const next=await request(appUrl('api.php')+'?'+query);
         if(Number(query.get('wheel'))!==selected.wheel||Number(query.get('event'))!==selected.boxes) return;
-        if(!force&&(saving||settingsDirty||dialog.open||root.contains(document.activeElement))) return;
+        if(!force&&(saving||dialog.open||root.contains(document.activeElement))) return;
         if(next.settings){state=next; render();}
     }catch(e){status.textContent=e.message;}
     finally{loading=null;done();}
@@ -197,11 +258,12 @@ async function save(data,fromDialog=false){
         if(data instanceof FormData){data.set('version',version); data.set('game',game);}
         else Object.assign(data,{version,game});
         const result=await post(data);
-        settingsDirty=false;
-        if(result.game){selected[tab]=result.game; storeSelection();}
+        if(result.game){selected[tab]=result.game; storeSelection();shares.set(result.game,result);}
+        if(!(data instanceof FormData)&&['game_archive','game_share'].includes(data.action)&&!result.game) shares.delete(game);
         if(dialog.open) dialog.close();
         await refresh(true);
         status.textContent='Saved.';
+        if(result.code) openEditor('share',0,data.action==='game_create');
     }catch(e){
         status.textContent='';
         error.textContent=e.message;
@@ -214,11 +276,14 @@ async function save(data,fromDialog=false){
 $('.tabs').addEventListener('click',e=>{
     const target=e.target.closest('[data-tab]');
     if(!target||tab===target.dataset.tab||saving||dialog.open) return;
-    if(settingsDirty&&!confirm('Discard unsaved settings?')) return;
-    settingsDirty=false;
     tab=target.dataset.tab; storeSelection(); render(); refresh();
 });
 root.addEventListener('change',async e=>{
+    if(e.target.name==='overview-kind'||e.target.name==='overview-status'){
+        if(e.target.name==='overview-kind') overviewKind=e.target.value;
+        else overviewStatus=e.target.value;
+        render(); return;
+    }
     if(e.target.name!=='game-picker'||saving) return;
     selected[tab]=Number(e.target.value);
     storeSelection();
@@ -231,7 +296,7 @@ function click(e){
     if(!b||!state||saving) return;
     if(b.dataset.editor){openEditor(b.dataset.editor,Number(b.dataset.id));return;}
     const {confirm:prompt,...data}=b.dataset;
-    if(!prompt||confirm(prompt)) save(data,dialog.open);
+    if(!prompt||confirm(tr(prompt))) save(data,dialog.open);
 }
 function submit(e){
     if(!e.target.dataset.form) return;
@@ -240,8 +305,22 @@ function submit(e){
     save(f.dataset.form==='avatar'?data:{action:f.dataset.form,...Object.fromEntries(data)},dialog.open);
 }
 root.addEventListener('click',click);
-root.addEventListener('input',()=>{if(tab==='settings') settingsDirty=true;});
 editor.addEventListener('click',click);
+editor.addEventListener('click',async e=>{
+    if(e.target.closest('[data-manage-created]')) dialog.close();
+    const copy=e.target.closest('[data-copy]');
+    if(copy){
+        try{await navigator.clipboard.writeText(copy.dataset.copy);copy.textContent='Copied';}
+        catch{$('#editor-error').textContent='Select the value and copy it manually.';}
+    }
+    if(e.target.closest('[data-sound-preview]')){
+        const audio=new AudioContext(), tone=audio.createOscillator(), gain=audio.createGain();
+        const start=audio.currentTime, volume=Number($('[name="volume"]',editor).value)/100;
+        tone.type='triangle';tone.frequency.setValueAtTime(240,start);tone.frequency.exponentialRampToValueAtTime(750,start+.28);
+        gain.gain.setValueAtTime(volume*.15,start);gain.gain.linearRampToValueAtTime(0,start+.45);
+        tone.connect(gain).connect(audio.destination);tone.start();tone.stop(start+.46);tone.onended=()=>audio.close();
+    }
+});
 root.addEventListener('submit',submit);
 editor.addEventListener('submit',submit);
 $('#editor-close').onclick=()=>dialog.close();

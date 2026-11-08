@@ -1,7 +1,9 @@
 <?php
 require dirname(__DIR__,2).'/config.php';
 security(); session_open();
-if(isset($_SESSION['admin'])) { header('Location: ../admin/'); exit; }
+$create=in_array($_GET['create']??null,['wheel','boxes'],true)?$_GET['create']:'';
+$destination='../admin/'.($create?'?tab='.$create.'&create=1':'');
+if(isset($_SESSION['admin'])) { header('Location: '.$destination); exit; }
 $error='';
 if($_SERVER['REQUEST_METHOD']==='POST') {
     try {
@@ -18,13 +20,13 @@ if($_SERVER['REQUEST_METHOD']==='POST') {
         need($valid && $user!==null,'Incorrect username or password.');
         sql('DELETE FROM login_attempts WHERE ip=?',[$ip]);
         session_regenerate_id(true); $_SESSION=['admin'=>$user['id'],'seen'=>time()];
-        header('Location: ../admin/',true,303); exit;
+        header('Location: '.$destination,true,303); exit;
     } catch(Rule $e) { $error=$e->getMessage(); }
     catch(Throwable $e) { error_log((string)$e); $error='Sign-in is unavailable. Check the database connection.'; }
 }
 ?>
 <!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sign in · BOLTX</title><link rel="icon" type="image/svg+xml" href="../assets/boltx-icon.svg"><link rel="stylesheet" href="../assets/style.css">
+<title>Sign in · BOLTX</title><link rel="icon" type="image/svg+xml" href="../assets/boltx-icon.svg"><link rel="stylesheet" href="../assets/style.css"><script type="module" src="../assets/locale.js"></script>
 <body class="portal"><main class="login panel"><img class="brand" src="../assets/boltx-logo.svg" alt="BOLTX">
 <h1>Control room</h1><p>Sign in to operate both games.</p>
 <form method="post"><input type="hidden" name="csrf" value="<?=h(token())?>">
