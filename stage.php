@@ -13,8 +13,8 @@ $operator=$role!=='view';
 $csrf=$operator?token():''; session_write_close();
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BOLTX <?= $wheel?'Spin Wheel':'Mystery Boxes' ?></title><link rel="icon" type="image/svg+xml" href="assets/boltx-icon.svg"><link rel="stylesheet" href="assets/style.css?v=game-sets">
-<script type="module" src="assets/stage.js?v=game-sets"></script></head>
+<title>BOLTX <?= $wheel?'Spin Wheel':'Mystery Boxes' ?></title><link rel="icon" type="image/svg+xml" href="assets/boltx-icon.svg"><link rel="stylesheet" href="assets/style.css?v=2">
+<script type="module" src="assets/stage.js?v=2"></script></head>
 <body class="stage <?=$view?>" data-view="<?=$view?>" data-game="<?=$game?>" data-role="<?=$role?>" data-csrf="<?=h($csrf)?>" data-language="<?=h(json_decode($challenge['options']??'{}',true)['language']??'en')?>">
 <div class="arena-decor" aria-hidden="true">
 <i></i><i></i><span class="scenery scenery-left"></span><span class="scenery scenery-right"></span>

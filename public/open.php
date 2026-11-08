@@ -25,7 +25,7 @@ if(isset($_GET['token']) || $_SERVER['REQUEST_METHOD']==='POST'){
 }
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Open a private challenge · BOLTX</title><link rel="icon" href="assets/boltx-icon.svg"><link rel="stylesheet" href="assets/style.css"><script type="module" src="assets/locale.js"></script></head>
+<title>Open a private challenge · BOLTX</title><link rel="icon" href="assets/boltx-icon.svg"><link rel="stylesheet" href="assets/style.css?v=2"><script type="module" src="assets/locale.js?v=2"></script></head>
 <body class="portal"><main class="login panel"><img class="brand" src="assets/boltx-logo.svg" alt="BOLTX">
 <h1>Open a private challenge</h1><p>Enter the code shared by your host.</p>
 <?php if($error): ?><p role="alert"><?=h($error)?></p><?php endif ?>

@@ -26,7 +26,7 @@ if($_SERVER['REQUEST_METHOD']==='POST') {
 }
 ?>
 <!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sign in · BOLTX</title><link rel="icon" type="image/svg+xml" href="../assets/boltx-icon.svg"><link rel="stylesheet" href="../assets/style.css"><script type="module" src="../assets/locale.js"></script>
+<title>Sign in · BOLTX</title><link rel="icon" type="image/svg+xml" href="../assets/boltx-icon.svg"><link rel="stylesheet" href="../assets/style.css?v=2"><script type="module" src="../assets/locale.js?v=2"></script>
 <body class="portal"><main class="login panel"><img class="brand" src="../assets/boltx-logo.svg" alt="BOLTX">
 <h1>Control room</h1><p>Sign in to operate both games.</p>
 <form method="post"><input type="hidden" name="csrf" value="<?=h(token())?>">

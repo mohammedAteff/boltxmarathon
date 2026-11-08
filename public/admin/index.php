@@ -8,7 +8,7 @@ if(!isset($_SESSION['admin'])) {
 $csrf=token(); session_write_close();
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Control room · BOLTX</title><link rel="icon" type="image/svg+xml" href="../assets/boltx-icon.svg"><link rel="stylesheet" href="../assets/style.css?v=game-sets"><script type="module" src="../assets/admin.js?v=game-sets"></script></head>
+<title>Control room · BOLTX</title><link rel="icon" type="image/svg+xml" href="../assets/boltx-icon.svg"><link rel="stylesheet" href="../assets/style.css?v=2"><script type="module" src="../assets/admin.js?v=2"></script></head>
 <body class="admin" data-csrf="<?=h($csrf)?>">
 <main><header class="admin-header"><div><img class="brand" src="../assets/boltx-logo.svg" alt="BOLTX"><h1>Control room</h1></div>
 <nav class="actions" aria-label="Account">

@@ -2,7 +2,7 @@
 require dirname(__DIR__).'/config.php'; security();
 ?>
 <!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BOLTX Challenge Games</title><link rel="icon" type="image/svg+xml" href="assets/boltx-icon.svg"><link rel="stylesheet" href="assets/style.css"><script type="module" src="assets/locale.js"></script>
+<title>BOLTX Challenge Games</title><link rel="icon" type="image/svg+xml" href="assets/boltx-icon.svg"><link rel="stylesheet" href="assets/style.css?v=2"><script type="module" src="assets/locale.js?v=2"></script>
 <body class="portal"><main class="launcher"><img class="brand" src="assets/boltx-logo.svg" alt="BOLTX"><p class="eyebrow">THE LIVE CHALLENGE ARENA</p>
 <h1 class="display">Pick your <em>challenge</em></h1>
 <div class="launch-grid">

@@ -29,7 +29,7 @@ if(isset($_GET['csv'])){
 $display=isset($_GET['display'])?'&display=1':'';
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Challenge checklist · BOLTX</title><link rel="icon" href="assets/boltx-icon.svg"><link rel="stylesheet" href="assets/style.css"><script type="module" src="assets/list.js"></script></head>
+<title>Challenge checklist · BOLTX</title><link rel="icon" href="assets/boltx-icon.svg"><link rel="stylesheet" href="assets/style.css?v=2"><script type="module" src="assets/list.js?v=2"></script></head>
 <body class="admin checklist" data-game="<?=$id?>" data-csrf="<?=h($csrf)?>" data-language="<?=h(settings($game)['language'])?>"><main>
 <header class="admin-header"><div><img class="brand" src="assets/boltx-logo.svg" alt="BOLTX"><h1>Challenge checklist</h1><p><bdi><?=h($game['name'])?></bdi></p><p class="print-date"><?=date('Y-m-d')?></p></div>
 <nav class="actions"><a href="<?=h(game_url($game).$display)?>">Back to wheel</a><a href="?game=<?=$id?>&amp;csv=1">Download CSV</a><button type="button" id="print-list">Print / Save as PDF</button></nav></header>
