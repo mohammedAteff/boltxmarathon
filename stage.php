@@ -3,11 +3,13 @@ require __DIR__.'/config.php'; security(); session_open();
 $operator=isset($_SESSION['admin']) && !isset($_GET['display']);
 $csrf=$operator?token():''; session_write_close();
 $wheel=$view==='wheel';
+$game=filter_var($_GET['game']??($wheel?1:2),FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>2147483647]]);
+if($game===false) { http_response_code(404); exit('Game not found.'); }
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BOLTX <?= $wheel?'Spin Wheel':'Mystery Boxes' ?></title><link rel="icon" type="image/svg+xml" href="assets/boltx-icon.svg"><link rel="stylesheet" href="assets/style.css">
-<script type="module" src="assets/stage.js"></script></head>
-<body class="stage <?=$view?>" data-view="<?=$view?>" data-csrf="<?=h($csrf)?>">
+<title>BOLTX <?= $wheel?'Spin Wheel':'Mystery Boxes' ?></title><link rel="icon" type="image/svg+xml" href="assets/boltx-icon.svg"><link rel="stylesheet" href="assets/style.css?v=game-sets">
+<script type="module" src="assets/stage.js?v=game-sets"></script></head>
+<body class="stage <?=$view?>" data-view="<?=$view?>" data-game="<?=$game?>" data-csrf="<?=h($csrf)?>">
 <div class="arena-decor" aria-hidden="true">
 <i></i><i></i><span class="scenery scenery-left"></span><span class="scenery scenery-right"></span>
 <span class="arena-art arena-art-left"></span><span class="arena-art arena-art-right"></span><span class="arena-sparks"></span>
@@ -16,7 +18,7 @@ $wheel=$view==='wheel';
 <header class="hero">
 <a href="./" aria-label="BOLTX home"><img class="brand" src="assets/boltx-logo.svg" alt="BOLTX"></a>
 <h1 class="display"><small>BOLTX</small><?= $wheel?'SPIN <em>WHEEL</em>':'MYSTERY <em>BOXES</em>' ?></h1>
-<p class="eyebrow"><?= $wheel?'RANDOM CHALLENGE':'OPEN · REVEAL · CHALLENGE' ?></p>
+<p class="eyebrow" id="game-name"><?= $wheel?'RANDOM CHALLENGE':'OPEN · REVEAL · CHALLENGE' ?></p>
 <div class="counter" id="counter" aria-label="Game counters"></div>
 </header>
 <?php if($wheel): ?>

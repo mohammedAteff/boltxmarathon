@@ -11,7 +11,9 @@ try {
             if(!isset($_SESSION['admin'])) { http_response_code(401); throw new Rule('Sign in to continue.'); }
             session_write_close();
         }
-        $out=state($view,number($_GET['since']??-1,-1,PHP_INT_MAX));
+        $wheel=number($_GET['wheel']??($view==='wheel'?($_GET['game']??1):1));
+        $event=number($_GET['event']??($view==='boxes'?($_GET['game']??2):2));
+        $out=state($view,number($_GET['since']??-1,-1,PHP_INT_MAX),$wheel,$event);
     } elseif($_SERVER['REQUEST_METHOD']==='POST') {
         session_open();
         if(!isset($_SESSION['admin'])) { http_response_code(401); throw new Rule('Sign in to operate the games.'); }
@@ -35,8 +37,9 @@ try {
         }
         $a=label($d['action']??'',32);
         $source=($d['source']??'')==='presenter'?'presenter':'dashboard';
-        if($source==='presenter') need(in_array($a,['spin','undo','box_open'],true) || ($a==='unit' && ($d['mode']??'')==='return'),'This action belongs in the dashboard.');
+        if($source==='presenter') need(in_array($a,['spin','undo','box_open','player_turn'],true) || ($a==='unit' && ($d['mode']??'')==='return'),'This action belongs in the dashboard.');
         $out=['version'=>action($a,$d,$source)];
+        if($a==='game_create') $out['game']=one('SELECT game_id FROM events WHERE id=?',[$out['version']])['game_id'];
     } else { http_response_code(405); throw new Rule('Method not allowed.'); }
     echo json_encode($out,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE);
 } catch(Rule|JsonException $e) {

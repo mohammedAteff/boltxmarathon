@@ -4,4 +4,4 @@ INSERT INTO items(name,icon) VALUES ('عصير برتقال','🍊'),('عصير 
 INSERT INTO units(item_id) SELECT id FROM items UNION ALL SELECT id FROM items UNION ALL SELECT id FROM items;
 INSERT INTO challenges(text,icon) VALUES ('أضف شطة حارة','🌶️'),('اشرب رشفة صغيرة','🥤'),('قلّد صوت شخصية','🎭'),('اختار لاعب يتحداك','⚡'),('احكِ نكتة','😄'),('غمّض عينيك وخمّن النكهة','👀'),('ضاعف الكمية','×2'),('قول جملة بسرعة','🎙️'),('بدّل الكوب مع لاعب','🔄'),('اشربه بدون ما تهز','🥤'),('غنّي لمدة عشر ثواني','🎵'),('اختر نكهة جديدة','🍋'),('تحدي بدون ضحك','😶'),('دور مرة أخرى','🎲'),('اللاعبون يختارون التحدي','👑');
 INSERT INTO boxes(challenge_id,number) SELECT id,id FROM challenges;
-UPDATE settings SET current_player=1 WHERE id=1;
+UPDATE game_sets SET current_player=1 WHERE id=1;

@@ -1,5 +1,6 @@
 import {$,esc,bdi,csrf,request,post,icon,avatar,appUrl} from './common.js';
 const view=document.body.dataset.view;
+const game=Number(document.body.dataset.game);
 const wheel=view==='wheel', operator=Boolean(csrf), reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const counter=$('#counter'),notice=$('#notice'),reveal=$('#reveal'),content=$('#reveal-content');
 const spin=$('#spin'),undo=$('#undo'),rotor=$('#rotor'),svg=$('#segments'),grid=$('#boxes');
@@ -61,13 +62,15 @@ function card(p,s){
     const current=s.current===p.id,full=p.max>0&&p.items.length>=p.max;
     return '<article class="player'+(current?' current':'')+(full?' full':'')+'" '+(current?'aria-current="true"':'')+'>'+avatar(p,s.version)+
         '<div class="player-head">'+(current?icon('crown'):'')+'<strong>'+bdi(p.name)+'</strong></div><div class="capacity">ITEMS <b>'+p.items.length+' <i>/ '+(p.max||'∞')+'</i></b></div>'+
-        (p.items.length?'<ul class="inventory">'+p.items.map(u=>'<li>'+bdi(u.name)+(operator?'<button data-unit="'+u.id+'" aria-label="Return '+esc(u.name)+' to the wheel" type="button">×</button>':'')+'</li>').join('')+'</ul>':'<p class="empty-player">'+(full?'At capacity':'No items yet')+'</p>')+'</article>';
+        (p.items.length?'<ul class="inventory">'+p.items.map(u=>'<li>'+bdi(u.name)+(operator?'<button data-unit="'+u.id+'" aria-label="Return '+esc(u.name)+' to the wheel" type="button">×</button>':'')+'</li>').join('')+'</ul>':'<p class="empty-player">'+(full?'At capacity':'No items yet')+'</p>')+
+        (operator?'<div class="live-player-actions">'+(!current&&!full?'<button type="button" data-turn="'+p.id+'">Set turn</button>':'')+
+        '<a href="'+appUrl('admin/')+'?wheel='+game+'&amp;player='+p.id+'">Manage</a></div>':'')+'</article>';
 }
 function controls(){
     if(!wheel) return;
     spin.disabled=!operator||busy||pending||!state?.current||!state?.remaining;
     undo.disabled=busy||pending||!state?.last;
-    document.querySelectorAll('[data-unit]').forEach(b=>b.disabled=busy||pending);
+    document.querySelectorAll('[data-unit],[data-turn]').forEach(b=>b.disabled=busy||pending);
 }
 function renderWheel(s){
     const p=s.players.find(p=>p.id===s.current);
@@ -169,28 +172,33 @@ async function sync(){
     if(refreshing) return;
     refreshing=true;
     try {
-        const next=await request(appUrl('api.php')+'?view='+view+'&since='+version);
+        const next=await request(appUrl('api.php')+'?view='+view+'&game='+game+'&since='+version);
         if(next.version!==version){
             const events=next.events||[];
             if(wheel) for(const e of events) await animateSpin(e,next);
             state=next; version=next.version;
+            if(game!==(wheel?1:2)) $('#game-name').textContent=next.game_name;
             document.body.classList.toggle('no-motion',!next.settings.motion);
             full.hidden=!next.settings.fullscreen||!operator||!document.fullscreenEnabled;
             if(wheel) renderWheel(next); else await renderBoxes(next);
         }else if(notice.textContent==='Connection lost. Reconnecting…') noticeText('');
-    } catch(e){noticeText('Connection lost. Reconnecting…');}
+    } catch(e){noticeText(e.message==='This game no longer exists.'?e.message:'Connection lost. Reconnecting…');}
     finally{refreshing=false; controls();}
 }
 async function act(action,data={}){
     if(pending||busy||!operator) return;
     pending=true; controls();
-    try{await post({action,source:'presenter',version,...data}); await sync();}
+    try{await post({action,source:'presenter',version,game,...data}); await sync();}
     catch(e){await sync(); noticeText(e.message,true);}
     finally{pending=false; controls();}
 }
 if(wheel){
     spin.onclick=()=>act('spin'); undo.onclick=()=>act('undo');
-    document.body.addEventListener('click',e=>{const unit=e.target.closest('[data-unit]'); if(unit) act('unit',{id:Number(unit.dataset.unit),mode:'return'});});
+    document.body.addEventListener('click',e=>{
+        const unit=e.target.closest('[data-unit]'),turn=e.target.closest('[data-turn]');
+        if(unit) act('unit',{id:Number(unit.dataset.unit),mode:'return'});
+        if(turn) act('player_turn',{id:Number(turn.dataset.turn)});
+    });
 }else{
     grid.onclick=e=>{
         const target=e.target.closest('.crate');
