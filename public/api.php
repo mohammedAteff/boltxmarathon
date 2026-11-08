@@ -38,6 +38,8 @@ try {
             $game=authorized_game(number($_POST['game']??null),'wheel');
             if(!can_manage($account,$game)){http_response_code(404);throw new Rule('Challenge unavailable.');}
             $d=$_POST; $file=$_FILES['image']??null;
+            $d['action']=$_POST['action']??'avatar';
+            need(in_array($d['action'],['player_save','avatar'],true),'Invalid request.');
             need(is_array($file) && $file['error']===UPLOAD_ERR_OK && $file['size']<=4*1024*1024 && is_uploaded_file($file['tmp_name']),'Choose a JPEG, PNG or WebP image under 4 MB.');
             $info=@getimagesize($file['tmp_name']);
             need($info && in_array($info['mime'],['image/jpeg','image/png','image/webp'],true) && $info[0]*$info[1]<=16000000,'Choose a valid image under 16 megapixels.');
@@ -46,7 +48,6 @@ try {
             $size=min($info[0],$info[1]); $dst=imagecreatetruecolor(256,256);
             imagecopyresampled($dst,$img,(int)0,(int)0,intdiv($info[0]-$size,2),intdiv($info[1]-$size,2),256,256,$size,$size);
             ob_start(); imagejpeg($dst,null,88); $d['image']=ob_get_clean();
-            $d['action']='avatar';
         } else {
             $d=json_decode(file_get_contents('php://input',false,null,0,65536),true,32,JSON_THROW_ON_ERROR);
             need(is_array($d),'Invalid request.');

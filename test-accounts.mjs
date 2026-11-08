@@ -1,5 +1,6 @@
 // Run against a local server configured with a disposable *_test database and a share key.
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 
 const base=new URL(process.env.BOLTX_TEST_URL||'http://127.0.0.1:8018/boltxmarathon/');
 assert(['127.0.0.1','localhost'].includes(base.hostname),'Use a local test server');
@@ -20,7 +21,13 @@ function browser(){
     const form=(path,data)=>req(path,{method:'POST',body:new URLSearchParams({csrf,...data})});
     const api=(query)=>req('api.php?'+query);
     const act=(data)=>req('api.php',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(data)});
-    return {req,form,api,act};
+    const upload=(fields,file)=>{
+        const body=new FormData();
+        for(const [k,v] of Object.entries(fields)) body.set(k,v);
+        body.set('image',file,'avatar.png');
+        return req('api.php',{method:'POST',headers:{'X-CSRF-Token':csrf},body});
+    };
+    return {req,form,api,act,upload};
 }
 function status(result,expected){
     assert.equal(result.status,expected,JSON.stringify(result).slice(0,800));
@@ -38,6 +45,16 @@ async function register(client,label,intent){
 const a=browser(), b=browser(), guest=browser(), operator=browser();
 const email=await register(a,'a','wheel');
 const wheel=status(await a.act({action:'game_create',kind:'wheel',name:'Wheel '+tag,role:'view',initial_players:'A',initial_items:'Joke'}),200).json;
+const photo=new Blob([readFileSync(new URL('public/assets/boltx-icon.png',import.meta.url))],{type:'image/png'});
+const player={action:'player_save',game:wheel.game,name:'With photo',position:2};
+status(await a.upload(player,new Blob(['not an image'],{type:'image/png'})),409);
+assert.equal(status(await a.api('view=mine'),200).json.players.length,1);
+status(await a.upload(player,photo),200);
+const added=status(await a.api('view=mine'),200).json.players.find(p=>p.name===player.name);
+assert.equal(added.photo,1);
+status(await a.req('avatar.php?id='+added.id),200);
+status(await a.act({...player,id:added.id,name:'Renamed with photo'}),200);
+status(await a.req('avatar.php?id='+added.id),200);
 const boxes=status(await a.act({action:'game_create',kind:'boxes',name:'Boxes '+tag,role:'play',initial_boxes:'Sing'}),200).json;
 const mine=status(await a.api('view=mine'),200).json;
 assert.deepEqual(mine.games.map(x=>x.id),[wheel.game,boxes.game]);
@@ -54,6 +71,7 @@ status(await b.req('admin/users.php'),403);
 status(await b.api('view=admin'),403);
 status(await b.act({action:'game_delete',game:wheel.game,_account_id:mine.games[0].owner_user_id}),404);
 status(await b.act({action:'game_rename',game:wheel.game,name:'unauthorized'}),404);
+status(await b.upload(player,photo),404);
 const other=status(await b.act({action:'game_create',kind:'wheel',name:'Other '+tag}),200).json;
 status(await b.act({action:'item_save',game:other.game,id:mine.items[0].id,name:'unauthorized',qty:3}),409);
 status(await b.req('open.php?token='+wheel.token),303);

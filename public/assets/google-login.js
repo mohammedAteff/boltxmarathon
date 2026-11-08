@@ -15,12 +15,19 @@ function renderGoogle(){
             form.requestSubmit();
         }
     });
+    let layout='';
     function button(){
+        const width=Math.min(320,Math.floor(slot.clientWidth));
+        const locale=document.documentElement.lang;
+        const next=width+':'+locale;
+        if(!width||next===layout) return;
+        layout=next;
         slot.replaceChildren();
-        gis.renderButton(slot,{type:'standard',theme:'outline',size:'large',text:'continue_with',shape:'rectangular',locale:document.documentElement.lang});
+        gis.renderButton(slot,{type:'standard',theme:'outline',size:'large',text:'continue_with',shape:'pill',logo_alignment:'center',width,locale});
     }
     button();
     new MutationObserver(button).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+    new ResizeObserver(button).observe(slot);
 }
 if(document.readyState==='complete') renderGoogle();
 else window.addEventListener('load',renderGoogle,{once:true});

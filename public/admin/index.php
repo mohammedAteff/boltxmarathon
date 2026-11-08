@@ -15,7 +15,7 @@ $csrf=token(); session_write_close();
 $title=$personal?'My Challenges':'Control room';
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?=h($title)?> · BOLTX</title><link rel="icon" type="image/svg+xml" href="../assets/boltx-icon.svg"><link rel="stylesheet" href="../assets/style.css?v=accounts"><script type="module" src="../assets/admin.js?v=accounts"></script></head>
+<title><?=h($title)?> · BOLTX</title><link rel="icon" type="image/svg+xml" href="../assets/boltx-icon.svg"><link rel="stylesheet" href="../assets/style.css?v=quick-add"><script type="module" src="../assets/admin.js?v=quick-add"></script></head>
 <body class="admin<?=$personal?' personal':''?>" data-csrf="<?=h($csrf)?>" data-dashboard="<?=$personal?'mine':'admin'?>">
 <main><header class="admin-header"><div><a href="../"><img class="brand" src="../assets/boltx-logo.svg" alt="BOLTX"></a><h1><?=h($title)?></h1><?php if($personal): ?><p class="muted"><bdi><?=h($account['display_name'])?></bdi></p><?php endif ?></div>
 <nav class="actions" aria-label="Account">
@@ -28,6 +28,6 @@ $title=$personal?'My Challenges':'Control room';
 <p id="admin-status" class="admin-status" role="status"></p><div id="panel" role="tabpanel" aria-labelledby="tab-wheel"></div></main>
 <dialog id="editor" class="admin-editor" aria-labelledby="editor-title">
 <button id="editor-close" class="close" type="button" aria-label="Close">×</button>
-<h2 id="editor-title"></h2><p id="editor-error" role="alert"></p><div id="editor-body"></div>
+<h2 id="editor-title"></h2><p id="editor-error" role="alert"></p><p id="editor-feedback" role="status"></p><div id="editor-body"></div>
 </dialog>
 </body></html>

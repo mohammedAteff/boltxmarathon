@@ -196,10 +196,10 @@ function action(string $a,array $d,string $source,?array &$extra=null): int {
             $cap=($d['cap']??'')==='' || $d['cap']===null ? null : number($d['cap'],0,500);
             $name=$text('name',100); $position=number($d['position']??0,0,100000); $active=flag($d['active']??1);
             if(empty($d['id'])) {
-                sql('INSERT INTO players(game_id,name,cap,position,active) VALUES (?,?,?,?,?)',[$game,$name,$cap,$position,$active]); $detail['id']=(int)db()->lastInsertId();
+                sql('INSERT INTO players(game_id,name,cap,position,active,avatar) VALUES (?,?,?,?,?,?)',[$game,$name,$cap,$position,$active,$d['image']??null]); $detail['id']=(int)db()->lastInsertId();
             } else {
                 $pid=$id(); $player($pid);
-                sql('UPDATE players SET name=?,cap=?,position=?,active=? WHERE id=?',[$name,$cap,$position,$active,$pid]);
+                sql('UPDATE players SET name=?,cap=?,position=?,active=?,avatar=COALESCE(?,avatar) WHERE id=?',[$name,$cap,$position,$active,$d['image']??null,$pid]);
             }
             break;
         case 'avatar':

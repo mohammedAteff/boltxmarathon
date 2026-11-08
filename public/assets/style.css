@@ -329,7 +329,7 @@ dialog::backdrop{background:#0a01197d}dialog .close{position:absolute;right:12px
 .account-links a { color:#edccff; }
 .account-divider { display:flex; align-items:center; gap:10px; margin:12px 0; color:#d5b3e7; font-size:.72rem; }
 .account-divider::before,.account-divider::after { content:""; flex:1; height:1px; background:#653586; }
-#google-button { min-height:40px; margin-top:14px; }
+#google-button { display:flex; justify-content:center; min-height:40px; margin:18px auto 0; width:min(100%,320px); }
 #google-status:empty { display:none; }
 .account-feedback { padding:10px 12px; border:1px solid #a760dd; border-radius:8px; background:#29113d; }
 .account-feedback.error { color:#ffd3e2; border-color:#a74678; }
@@ -337,3 +337,38 @@ dialog::backdrop{background:#0a01197d}dialog .close{position:absolute;right:12px
 .personal .challenge-actions { min-width:215px; }
 .personal .challenge-actions a { display:inline-block; }
 @keyframes account-enter { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+.admin .game-toolbar .launch-game { color:white; background:#7b20ac; border:1px solid #dc77fc; }
+.admin .game-toolbar .launch-game:hover { background:#982ad2; }
+.admin .game-more { align-self:start; font-size:.86rem; }
+.admin .game-more summary { width:fit-content; }
+.admin .challenge-actions .game-more .actions { max-width:28ch; white-space:normal; }
+.admin .form-disclosure { border:1px solid #633477; border-radius:10px; padding:4px 12px; }
+.admin .form-disclosure .disclosure-body { display:grid; gap:12px; padding:8px 0 12px; }
+.admin .editor-form { gap:14px; }
+.admin .editor-form label { gap:6px; font-weight:600; }
+.admin .editor-form :is(input:not([type=file]),select,textarea),.account-card input:not([type=hidden]) {
+  min-height:44px; padding:10px 12px; border-radius:10px; background:#180c23; border-color:#88509e;
+}
+.admin .editor-form :is(input,select,textarea):focus-visible,.account-card input:focus-visible {
+  border-color:#f2a2ff; outline:2px solid #b656dd; outline-offset:2px;
+}
+.admin .editor-form .form-end { gap:8px; flex-wrap:wrap; }
+.admin .editor-form .form-end button { min-height:42px; }
+.admin #editor-feedback { margin:0; color:#edbcff; font-size:.87rem; }
+.admin #editor-feedback:empty { display:none; }
+.admin .share-field { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:end; margin:8px 0; }
+.admin .share-field button { min-height:36px; }
+.admin .player-upload {
+  display:grid; grid-template-columns:52px minmax(0,1fr); align-items:center; column-gap:12px; padding:10px;
+  border:1px dashed #9855b2; border-radius:12px; background:#271338;
+}
+.admin .player-upload .upload-preview { grid-row:1 / span 3; display:grid; place-items:center; width:52px; height:52px; overflow:hidden;
+  border:1px solid #b86bdb; border-radius:50%; color:#f5baff; font-size:1.3rem; }
+.admin .player-upload img { width:100%; height:100%; object-fit:cover; }
+.admin .player-upload small { color:var(--soft); font-weight:400; }
+.admin .player-upload input { width:100%; max-width:none; padding:2px; border:0; background:none; font-size:.83rem; }
+.admin .player-upload ::file-selector-button {
+  background:#64308a; color:white; border:1px solid #ab6dc9; border-radius:7px; padding:5px 8px; margin-inline-end:8px; cursor:pointer;
+}
+@media (prefers-reduced-motion:reduce) { .account-card { animation:none; } }
